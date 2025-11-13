@@ -17,119 +17,244 @@
         .container {
             max-width: 400px;
             margin: 0 auto;
-            text-align: center;
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         .btn {
-            background: white;
-            color: #667eea;
+            background: #667eea;
+            color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 18px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            margin: 10px;
-            width: 200px;
+            margin: 10px 0;
+            width: 100%;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
         }
         .status {
             background: rgba(255,255,255,0.1);
             padding: 15px;
             border-radius: 10px;
-            margin: 20px 0;
+            margin: 15px 0;
+            text-align: center;
         }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .info { background: #2196F3; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>👋 Мама Рядом</h1>
-        <div id="status" class="status">Загрузка...</div>
-        
-        <button class="btn" onclick="testAPI()">Тест API</button>
-        <button class="btn" onclick="showMainMenu()">Главное меню</button>
-        
-        <div id="userInfo"></div>
+        <!-- Экран загрузки -->
+        <div id="loadingScreen" class="screen active">
+            <div class="card">
+                <h2>👋 Мама Рядом</h2>
+                <p>Загрузка...</p>
+            </div>
+        </div>
+
+        <!-- Экран регистрации -->
+        <div id="registrationScreen" class="screen">
+            <div class="card">
+                <h2>📝 Регистрация</h2>
+                <p>Создайте ваш профиль для участия в сообществе</p>
+                
+                <div id="regStatus" class="status info">Заполните информацию</div>
+                
+                <form id="registrationForm">
+                    <input type="text" id="nickname" placeholder="Придумайте никнейм" required>
+                    <select id="city" required>
+                        <option value="">Выберите город</option>
+                        <option value="Санкт-Петербург" selected>Санкт-Петербург</option>
+                    </select>
+                    <select id="children" required>
+                        <option value="">Дети</option>
+                        <option value="1 ребенок">1 ребенок</option>
+                        <option value="2 ребенка">2 ребенка</option>
+                        <option value="3+ детей">3+ детей</option>
+                        <option value="пока нет">Пока нет детей</option>
+                    </select>
+                    
+                    <button type="submit" class="btn" id="submitBtn">
+                        🚀 Начать пользоваться
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Главный экран -->
+        <div id="mainScreen" class="screen">
+            <div class="card">
+                <h2>🏠 Главное меню</h2>
+                <p>Добро пожаловать, <span id="userNickname">Мама</span>! 👋</p>
+                
+                <button class="btn" onclick="showSection('walk')">🚶‍♀️ Идем гулять</button>
+                <button class="btn" onclick="showSection('find')">🔍 Найти маму</button>
+                <button class="btn" onclick="showSection('locations')">📍 Локации</button>
+                <button class="btn" onclick="showSection('nanny')">👶 Няня для ребенка</button>
+                <button class="btn" onclick="showSection('settings')">⚙️ Настройки</button>
+            </div>
+        </div>
     </div>
 
     <script>
         let tg = null;
         let user = null;
+        let currentUser = null;
 
         // Инициализация Telegram Mini App
-        function initTelegramApp() {
+        async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
                 tg.expand();
                 tg.enableClosingConfirmation();
                 
                 user = tg.initDataUnsafe?.user;
-                console.log('👤 Пользователь:', user);
+                console.log('👤 Пользователь Telegram:', user);
                 
                 if (user) {
-                    document.getElementById('userInfo').innerHTML = `
-                        <p>Привет, ${user.first_name}!</p>
-                        <p>ID: ${user.id}</p>
-                    `;
-                    document.getElementById('status').textContent = '✅ Mini App готов к работе!';
+                    // Проверяем, зарегистрирован ли пользователь
+                    await checkUserRegistration();
                 } else {
-                    document.getElementById('status').textContent = '⚠️ Данные пользователя не получены';
+                    showScreen('registrationScreen');
                 }
                 
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
-                document.getElementById('status').textContent = '❌ Ошибка загрузки';
+                showScreen('registrationScreen');
             }
         }
 
-        // Тест API
-        async function testAPI() {
+        // Проверка регистрации пользователя
+        async function checkUserRegistration() {
             try {
-                const response = await fetch('/api/ping');
-                const data = await response.json();
-                document.getElementById('status').textContent = `✅ ${data.message}`;
+                const response = await fetch('/api/check-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id })
+                });
+                
+                const result = await response.json();
+                console.log('📊 Результат проверки:', result);
+                
+                if (result.exists) {
+                    // Пользователь уже зарегистрирован
+                    currentUser = result.user;
+                    showMainScreen();
+                } else {
+                    // Нужна регистрация
+                    showScreen('registrationScreen');
+                }
+                
             } catch (error) {
-                document.getElementById('status').textContent = '❌ Ошибка API';
+                console.error('❌ Ошибка проверки:', error);
+                showScreen('registrationScreen');
             }
         }
 
-        // Главное меню
-        function showMainMenu() {
-            document.getElementById('status').innerHTML = `
-                <h3>🏠 Главное меню</h3>
-                <p>Выберите раздел:</p>
-                <button class="btn" onclick="showWalkSection()">🚶‍♀️ Идем гулять</button>
-                <button class="btn" onclick="showFindSection()">🔍 Найти маму</button>
-                <button class="btn" onclick="showLocations()">📍 Локации</button>
-            `;
+        // Регистрация нового пользователя
+        async function registerUser(userData) {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Регистрация...';
+            
+            try {
+                const response = await fetch('/api/save-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                console.log('✅ Результат регистрации:', result);
+                
+                if (result.success) {
+                    showStatus('✅ Регистрация успешна!', 'success');
+                    currentUser = result.user;
+                    setTimeout(() => showMainScreen(), 1500);
+                } else {
+                    throw new Error(result.error || 'Ошибка регистрации');
+                }
+                
+            } catch (error) {
+                console.error('❌ Ошибка регистрации:', error);
+                showStatus(`❌ ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Начать пользоваться';
+            }
         }
 
-        function showWalkSection() {
-            document.getElementById('status').innerHTML = `
-                <h3>🚶‍♀️ Идем гулять</h3>
-                <p>Скоро здесь будет карта с мамами...</p>
-                <button class="btn" onclick="showMainMenu()">← Назад</button>
-            `;
+        // Показ экранов
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
         }
 
-        function showFindSection() {
-            document.getElementById('status').innerHTML = `
-                <h3>🔍 Найти маму</h3>
-                <p>Скоро здесь будет поиск...</p>
-                <button class="btn" onclick="showMainMenu()">← Назад</button>
-            `;
+        function showMainScreen() {
+            if (currentUser) {
+                document.getElementById('userNickname').textContent = currentUser.nickname;
+            }
+            showScreen('mainScreen');
         }
 
-        function showLocations() {
-            document.getElementById('status').innerHTML = `
-                <h3>📍 Локации</h3>
-                <p>Скоро здесь будут площадки...</p>
-                <button class="btn" onclick="showMainMenu()">← Назад</button>
-            `;
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('regStatus');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
         }
+
+        function showSection(section) {
+            alert(`Раздел "${section}" в разработке 🚧`);
+            // Здесь будет логика каждого раздела
+        }
+
+        // Обработчик формы регистрации
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                userId: user?.id || Math.floor(Math.random() * 1000000),
+                nickname: document.getElementById('nickname').value,
+                city: document.getElementById('city').value,
+                children: document.getElementById('children').value
+            };
+            
+            if (!formData.nickname || !formData.city || !formData.children) {
+                showStatus('❌ Заполните все поля', 'error');
+                return;
+            }
+            
+            registerUser(formData);
+        });
 
         // Запуск при загрузке
         document.addEventListener('DOMContentLoaded', function() {
-            initTelegramApp();
-            setTimeout(testAPI, 1000);
+            setTimeout(initTelegramApp, 500);
         });
     </script>
 </body>
