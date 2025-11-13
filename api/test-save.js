@@ -11,15 +11,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🧪 Тестовый запрос к Google Sheets');
+    console.log('🧪 Тестовый запрос к Google Sheets для МамыРядом');
     
-    // Тестовые данные
+    // ПРАВИЛЬНЫЕ тестовые данные для МамыРядом
     const testData = {
-      name: 'Тестовый пользователь',
-      phone: '+79991234567',
-      email: 'test@example.com',
+      name: 'Анна Тестова',
+      phone: '+79998887766',
+      email: 'test@mama-ryadom.ru',
       city: 'Москва',
-      service: 'Тестовая услуга',
+      childrenAge: '3 года',
+      interests: 'развивающие занятия, встречи в парке',
+      helpType: 'ищу маму для общения и совместных прогулок',
+      about: 'Мама трёхлетней дочки, хочу найти друзей для совместного времяпрепровождения',
       test: true,
       timestamp: new Date().toISOString()
     };
@@ -42,7 +45,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       success: true,
       test: true,
-      message: "Тестовые данные отправлены в Google Sheets",
+      message: "Тестовые данные МамыРядом отправлены в Google Sheets",
       sentData: testData,
       googleSheetsResponse: result,
       timestamp: new Date().toISOString()
