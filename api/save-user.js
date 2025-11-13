@@ -15,8 +15,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Save User API для МамыРядом работает',
-      timestamp: new Date().toISOString(),
-      fields: ['name', 'phone', 'email', 'city', 'childrenAge', 'interests', 'helpType', 'about']
+      timestamp: new Date().toISOString()
     });
   }
 
@@ -37,19 +36,46 @@ export default async function handler(req, res) {
         body: JSON.stringify(req.body)
       });
       
-      const result = await response.json();
+      // Проверяем Content-Type перед парсингом
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Content-Type ответа:', contentType);
+      
+      let result;
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        // Если пришел HTML или другой контент
+        const text = await response.text();
+        console.log('⚠️ Получен не-JSON ответ:', text.substring(0, 200));
+        
+        // Проверяем если это страница авторизации
+        if (text.includes('Google Account') || text.includes('signin')) {
+          throw new Error('Требуется авторизация Google Apps Script');
+        } else if (text.includes('DOCTYPE') || text.includes('html')) {
+          throw new Error('Apps Script вернул HTML страницу вместо JSON');
+        } else {
+          throw new Error(`Неожиданный ответ: ${text.substring(0, 100)}`);
+        }
+      }
+      
       console.log('✅ Ответ от Google Sheets:', result);
       
-      res.status(200).json({
-        success: true,
-        message: 'Анкета мамы успешно сохранена в базу!',
-        appsScriptResult: result,
-        timestamp: new Date().toISOString()
-      });
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: 'Анкета мамы успешно сохранена в базу!',
+          appsScriptResult: result,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        throw new Error(result.error || 'Ошибка от Google Sheets');
+      }
       
     } catch (error) {
-      console.error('❌ Ошибка сохранения:', error);
+      console.error('❌ Ошибка сохранения:', error.message);
       
+      // Все равно возвращаем успех для Telegram бота
       res.status(200).json({
         success: true,
         message: 'Данные сохранены локально (ошибка Google Sheets)',
