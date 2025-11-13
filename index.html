@@ -120,6 +120,11 @@
                 <button class="btn" onclick="showSection('locations')">📍 Локации</button>
                 <button class="btn" onclick="showSection('nanny')">👶 Няня для ребенка</button>
                 <button class="btn" onclick="showSection('settings')">⚙️ Настройки</button>
+
+                <!-- Кнопка выхода -->
+                <button class="btn" onclick="logout()" style="background: #f44336;">
+                    🚪 Выйти
+                </button>
             </div>
         </div>
     </div>
@@ -129,7 +134,7 @@
         let user = null;
         let currentUser = null;
 
-        // ОБНОВЛЕННАЯ инициализация с проверкой пользователя
+        // ВРЕМЕННАЯ УПРОЩЕННАЯ инициализация
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
@@ -139,42 +144,21 @@
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
-                if (user) {
-                    // Пытаемся проверить, зарегистрирован ли пользователь
-                    try {
-                        const response = await fetch('/api/check-user', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userId: user.id })
-                        });
-                        
-                        const result = await response.json();
-                        console.log('📊 Результат проверки:', result);
-                        
-                        if (result.exists) {
-                            // Пользователь зарегистрирован - показываем главный экран
-                            currentUser = result.user;
-                            showMainScreen();
-                        } else {
-                            // Пользователь не найден - показываем регистрацию
-                            showScreen('registrationScreen');
-                            document.getElementById('regStatus').innerHTML = `
-                                Привет, ${user.first_name}! 👋<br>
-                                <small>Заполни профиль чтобы начать</small>
-                            `;
-                        }
-                    } catch (apiError) {
-                        // Если API не работает - показываем регистрацию
-                        console.error('❌ Ошибка API:', apiError);
-                        showScreen('registrationScreen');
+                // Проверяем есть ли сохраненный пользователь
+                const savedUser = localStorage.getItem('mamaRyadomUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    showMainScreen();
+                    console.log('✅ Пользователь восстановлен из localStorage');
+                } else {
+                    showScreen('registrationScreen');
+                    if (user) {
                         document.getElementById('regStatus').innerHTML = `
-                            Привет! 👋<br>
-                            <small>Создайте ваш профиль</small>
+                            Привет, ${user.first_name}! 👋<br>
+                            <small>Заполни профиль чтобы начать</small>
                         `;
                     }
-                } else {
-                    // Нет данных пользователя
-                    showScreen('registrationScreen');
+                    console.log('❌ Пользователь не найден, показываем регистрацию');
                 }
                 
             } catch (error) {
@@ -183,34 +167,47 @@
             }
         }
 
-        // ОБНОВЛЕННАЯ регистрация с сохранением в Google Sheets
+        // ВРЕМЕННАЯ УПРОЩЕННАЯ регистрация
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Регистрация...';
             
             try {
-                // Сохраняем через API
-                const response = await fetch('/api/save-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
-                
-                const result = await response.json();
-                console.log('✅ Результат сохранения:', result);
-                
-                if (result.success) {
-                    showStatus('✅ Регистрация успешна!', 'success');
-                    currentUser = result.user;
+                // Пытаемся сохранить через API
+                try {
+                    const response = await fetch('/api/save-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
                     
-                    // Ждем и показываем главный экран
-                    setTimeout(() => {
-                        showMainScreen();
-                    }, 1500);
-                } else {
-                    throw new Error(result.error || 'Ошибка сохранения');
+                    const result = await response.json();
+                    console.log('✅ Результат сохранения через API:', result);
+                    
+                    if (result.success) {
+                        currentUser = result.user;
+                        showStatus('✅ Регистрация успешна! (данные сохранены)', 'success');
+                    } else {
+                        throw new Error('API вернул ошибку: ' + (result.error || 'неизвестная ошибка'));
+                    }
+                } catch (apiError) {
+                    // Если API не работает - сохраняем локально
+                    console.log('⚠️ API не доступен, сохраняем локально:', apiError);
+                    currentUser = {
+                        ...userData,
+                        first_name: user?.first_name || 'Мама',
+                        registered: true
+                    };
+                    showStatus('✅ Регистрация успешна! (локальное сохранение)', 'success');
                 }
+                
+                // Сохраняем в localStorage чтобы "запомнить" пользователя
+                localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                
+                setTimeout(() => {
+                    showMainScreen();
+                }, 1500);
                 
             } catch (error) {
                 console.error('❌ Ошибка регистрации:', error);
@@ -219,6 +216,14 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Начать пользоваться';
             }
+        }
+
+        // Выход из аккаунта
+        function logout() {
+            localStorage.removeItem('mamaRyadomUser');
+            currentUser = null;
+            showScreen('registrationScreen');
+            showStatus('👋 Вы вышли из аккаунта', 'info');
         }
 
         // Показ экранов
@@ -267,7 +272,7 @@
                     showStatus('❌ Ошибка API: ' + (result.error || 'неизвестная ошибка'), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Нет подключения к API', 'error');
+                showStatus('❌ Нет подключения к API: ' + error.message, 'error');
             }
         }
 
@@ -298,6 +303,7 @@
         // Глобальные функции для кнопок
         window.testAPI = testAPI;
         window.showSection = showSection;
+        window.logout = logout;
     </script>
 </body>
 </html>
