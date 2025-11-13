@@ -1,4 +1,7 @@
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxLKi8F0fZIeCUv2OFv0Nc76XSW6LZJn1xxS7tSOz8aa3ddjnv0Ju80I2WmybzLdRSA/exec';
+
 export default async function handler(req, res) {
+  // Разрешаем CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,16 +13,28 @@ export default async function handler(req, res) {
   try {
     const { userId } = req.body;
     
-    // Пока всегда возвращаем, что пользователь не найден
-    // (будет показывать форму регистрации)
-    const response = {
-      exists: false,
-      message: "👤 Пользователь не найден",
-      userId: userId
-    };
-
-    res.json(response);
+    console.log('🔍 Проверка пользователя:', userId);
+    
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'checkUser',
+        userId: userId.toString()
+      })
+    });
+    
+    const result = await response.json();
+    console.log('✅ Результат проверки:', result);
+    
+    res.json(result);
+    
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка проверки пользователя' });
+    console.error('❌ Ошибка проверки:', error);
+    res.status(500).json({ 
+      error: 'Ошибка проверки пользователя: ' + error.message 
+    });
   }
 }
