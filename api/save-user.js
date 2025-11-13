@@ -14,46 +14,35 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({
       success: true,
-      message: 'Save User API работает',
-      timestamp: new Date().toISOString()
+      message: 'Save User API для МамыРядом работает',
+      timestamp: new Date().toISOString(),
+      fields: ['name', 'phone', 'email', 'city', 'childrenAge', 'interests', 'helpType', 'about']
     });
   }
 
   // POST для сохранения данных
   if (req.method === 'POST') {
     try {
-      console.log('📥 Получены данные от пользователя:', req.body);
+      console.log('📥 Получены данные от мамы:', req.body);
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
       console.log('📤 Отправляем в Google Sheets...');
-      
-      // Важно: добавляем обработку timeout и ошибок
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек timeout
       
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(req.body),
-        signal: controller.signal
+        body: JSON.stringify(req.body)
       });
-      
-      clearTimeout(timeoutId);
-      
-      // Проверяем статус ответа
-      if (!response.ok) {
-        throw new Error(`Google Script error: ${response.status} ${response.statusText}`);
-      }
       
       const result = await response.json();
       console.log('✅ Ответ от Google Sheets:', result);
       
       res.status(200).json({
         success: true,
-        message: 'Данные успешно сохранены в Google Sheets',
+        message: 'Анкета мамы успешно сохранена в базу!',
         appsScriptResult: result,
         timestamp: new Date().toISOString()
       });
@@ -61,7 +50,6 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('❌ Ошибка сохранения:', error);
       
-      // Все равно возвращаем успех для Telegram бота, но с флагом localSave
       res.status(200).json({
         success: true,
         message: 'Данные сохранены локально (ошибка Google Sheets)',
