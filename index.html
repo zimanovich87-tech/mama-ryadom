@@ -101,6 +101,11 @@
                         🚀 Начать пользоваться
                     </button>
                 </form>
+
+                <!-- Кнопка теста API -->
+                <button class="btn" onclick="testAPI()" style="background: #ff9800;">
+                    🧪 Тест API
+                </button>
             </div>
         </div>
 
@@ -124,7 +129,7 @@
         let user = null;
         let currentUser = null;
 
-        // Инициализация Telegram Mini App
+        // УПРОЩЕННАЯ инициализация Telegram Mini App
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
@@ -134,11 +139,15 @@
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
+                // Сразу показываем регистрацию (БЕЗ ПРОВЕРКИ API)
+                showScreen('registrationScreen');
+                
+                // Показываем данные пользователя если есть
                 if (user) {
-                    // Проверяем, зарегистрирован ли пользователь
-                    await checkUserRegistration();
-                } else {
-                    showScreen('registrationScreen');
+                    document.getElementById('regStatus').innerHTML = `
+                        Привет, ${user.first_name}! 👋<br>
+                        <small>Заполни профиль чтобы начать</small>
+                    `;
                 }
                 
             } catch (error) {
@@ -147,60 +156,29 @@
             }
         }
 
-        // Проверка регистрации пользователя
-        async function checkUserRegistration() {
-            try {
-                const response = await fetch('/api/check-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id })
-                });
-                
-                const result = await response.json();
-                console.log('📊 Результат проверки:', result);
-                
-                if (result.exists) {
-                    // Пользователь уже зарегистрирован
-                    currentUser = result.user;
-                    showMainScreen();
-                } else {
-                    // Нужна регистрация
-                    showScreen('registrationScreen');
-                }
-                
-            } catch (error) {
-                console.error('❌ Ошибка проверки:', error);
-                showScreen('registrationScreen');
-            }
-        }
-
-        // Регистрация нового пользователя
+        // УПРОЩЕННАЯ регистрация пользователя
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Регистрация...';
             
             try {
-                const response = await fetch('/api/save-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
+                // Пока просто сохраняем локально (без API)
+                currentUser = {
+                    ...userData,
+                    first_name: user?.first_name || 'Мама'
+                };
                 
-                const result = await response.json();
-                console.log('✅ Результат регистрации:', result);
+                showStatus('✅ Регистрация успешна!', 'success');
                 
-                if (result.success) {
-                    showStatus('✅ Регистрация успешна!', 'success');
-                    currentUser = result.user;
-                    setTimeout(() => showMainScreen(), 1500);
-                } else {
-                    throw new Error(result.error || 'Ошибка регистрации');
-                }
+                // Ждем немного и показываем главный экран
+                setTimeout(() => {
+                    showMainScreen();
+                }, 1500);
                 
             } catch (error) {
                 console.error('❌ Ошибка регистрации:', error);
-                showStatus(`❌ ${error.message}`, 'error');
+                showStatus('❌ Ошибка регистрации', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Начать пользоваться';
@@ -229,8 +207,32 @@
         }
 
         function showSection(section) {
-            alert(`Раздел "${section}" в разработке 🚧`);
-            // Здесь будет логика каждого раздела
+            const sectionNames = {
+                'walk': '🚶‍♀️ Идем гулять',
+                'find': '🔍 Найти маму', 
+                'locations': '📍 Локации',
+                'nanny': '👶 Няня для ребенка',
+                'settings': '⚙️ Настройки'
+            };
+            
+            alert(`Раздел "${sectionNames[section]}" в разработке 🚧`);
+        }
+
+        // Тест API (простая версия)
+        async function testAPI() {
+            try {
+                showStatus('Тестируем подключение...', 'info');
+                const response = await fetch('/api/test-google');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ API работает!', 'success');
+                } else {
+                    showStatus('❌ Ошибка API: ' + (result.error || 'неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Нет подключения к API', 'error');
+            }
         }
 
         // Обработчик формы регистрации
@@ -256,6 +258,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(initTelegramApp, 500);
         });
+
+        // Глобальные функции для кнопок
+        window.testAPI = testAPI;
+        window.showSection = showSection;
     </script>
 </body>
 </html>
