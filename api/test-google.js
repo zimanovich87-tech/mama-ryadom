@@ -4,18 +4,35 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   try {
+    console.log('🔧 Тестируем Google Script...');
     const response = await fetch(WEB_APP_URL);
-    const result = await response.json();
+    const text = await response.text();
     
-    res.json({
-      success: true,
-      message: '✅ Google Script работает!',
-      data: result
-    });
+    // Пытаемся распарсить JSON
+    try {
+      const result = JSON.parse(text);
+      console.log('✅ JSON получен:', result);
+      
+      res.json({
+        success: true,
+        message: '✅ Google Script работает!',
+        data: result
+      });
+    } catch (jsonError) {
+      // Если не JSON - значит ошибка
+      console.error('❌ Ответ не JSON:', text.substring(0, 100));
+      res.json({
+        success: false,
+        error: 'Google Script возвращает HTML вместо JSON',
+        responseText: text.substring(0, 200)
+      });
+    }
+    
   } catch (error) {
+    console.error('❌ Ошибка подключения:', error);
     res.json({
       success: false,
-      error: error.message
+      error: 'Нет подключения: ' + error.message
     });
   }
 }
