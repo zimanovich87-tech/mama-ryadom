@@ -1,3 +1,5 @@
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxlSoGC2EIqb9VVKDSacEwb-79AnEeXomTYK5EMclnmJTDqTxs5Tq1pESZkaW5dk40Z7w/exec';
+
 export default async function handler(req, res) {
   // Разрешаем CORS для Telegram
   res.setHeader('Access-Control-Allow-Origin', '*');
