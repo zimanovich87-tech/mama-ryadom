@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   // POST для сохранения данных
   if (req.method === 'POST') {
     try {
-      console.log('📥 Получены данные от мамы:', req.body);
+      console.log('📥 Получены данные от мамы:', JSON.stringify(req.body, null, 2));
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
@@ -36,41 +36,15 @@ export default async function handler(req, res) {
         body: JSON.stringify(req.body)
       });
       
-      // Проверяем Content-Type перед парсингом
-      const contentType = response.headers.get('content-type');
-      console.log('📄 Content-Type ответа:', contentType);
-      
-      let result;
-      
-      if (contentType && contentType.includes('application/json')) {
-        result = await response.json();
-      } else {
-        // Если пришел HTML или другой контент
-        const text = await response.text();
-        console.log('⚠️ Получен не-JSON ответ:', text.substring(0, 200));
-        
-        // Проверяем если это страница авторизации
-        if (text.includes('Google Account') || text.includes('signin')) {
-          throw new Error('Требуется авторизация Google Apps Script');
-        } else if (text.includes('DOCTYPE') || text.includes('html')) {
-          throw new Error('Apps Script вернул HTML страницу вместо JSON');
-        } else {
-          throw new Error(`Неожиданный ответ: ${text.substring(0, 100)}`);
-        }
-      }
-      
+      const result = await response.json();
       console.log('✅ Ответ от Google Sheets:', result);
       
-      if (result.success) {
-        res.status(200).json({
-          success: true,
-          message: 'Анкета мамы успешно сохранена в базу!',
-          appsScriptResult: result,
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        throw new Error(result.error || 'Ошибка от Google Sheets');
-      }
+      res.status(200).json({
+        success: true,
+        message: 'Анкета мамы успешно сохранена в базу!',
+        appsScriptResult: result,
+        timestamp: new Date().toISOString()
+      });
       
     } catch (error) {
       console.error('❌ Ошибка сохранения:', error.message);
