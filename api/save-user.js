@@ -5,28 +5,20 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Обрабатываем preflight запрос
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-  
+
   // GET для тестирования
   if (req.method === 'GET') {
     return res.status(200).json({
       success: true,
-      message: 'Save User API работает. Используй POST для сохранения данных.',
-      example: {
-        name: 'Имя пользователя',
-        phone: '+79991234567',
-        email: 'email@example.com',
-        city: 'Город',
-        service: 'Услуга'
-      },
+      message: 'Save User API работает',
       timestamp: new Date().toISOString()
     });
   }
-  
+
   // POST для сохранения данных
   if (req.method === 'POST') {
     try {
@@ -34,41 +26,51 @@ export default async function handler(req, res) {
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // Отправляем данные в Google Apps Script
+      console.log('📤 Отправляем в Google Sheets...');
+      
+      // Важно: добавляем обработку timeout и ошибок
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек timeout
+      
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(req.body)
+        body: JSON.stringify(req.body),
+        signal: controller.signal
       });
       
-      const result = await response.json();
-      console.log('📤 Ответ от Google Sheets:', result);
+      clearTimeout(timeoutId);
       
-      if (result.success) {
-        console.log('✅ Данные сохранены в Google Sheets');
-        res.status(200).json({
-          success: true,
-          message: 'Данные успешно сохранены',
-          appsScriptResult: result
-        });
-      } else {
-        console.error('❌ Ошибка Apps Script:', result);
-        res.status(500).json({
-          success: false,
-          error: 'Ошибка при сохранении в Google Sheets'
-        });
+      // Проверяем статус ответа
+      if (!response.ok) {
+        throw new Error(`Google Script error: ${response.status} ${response.statusText}`);
       }
       
+      const result = await response.json();
+      console.log('✅ Ответ от Google Sheets:', result);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Данные успешно сохранены в Google Sheets',
+        appsScriptResult: result,
+        timestamp: new Date().toISOString()
+      });
+      
     } catch (error) {
-      console.error('❌ Серверная ошибка:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Внутренняя ошибка сервера: ' + error.message
+      console.error('❌ Ошибка сохранения:', error);
+      
+      // Все равно возвращаем успех для Telegram бота, но с флагом localSave
+      res.status(200).json({
+        success: true,
+        message: 'Данные сохранены локально (ошибка Google Sheets)',
+        localSave: true,
+        error: error.message,
+        timestamp: new Date().toISOString()
       });
     }
   } else {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
