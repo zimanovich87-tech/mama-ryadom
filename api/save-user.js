@@ -17,10 +17,10 @@ export default async function handler(req, res) {
   }
   
   try {
-    console.log('📥 Получены данные:', req.body);
+    console.log('📥 Получены данные от пользователя:', req.body);
     
-    // ТВОЙ_URL_ВЕБ_ПРИЛОЖЕНИЯ из Apps Script
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIZm4Sw5tgFU7_aTQ9rNF0NtyDXga0iSPblb8kVikX/dev';
+    // ТВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ из Apps Script
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
     
     // Отправляем данные в Google Apps Script
     const response = await fetch(APPS_SCRIPT_URL, {
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     });
     
     const result = await response.json();
+    console.log('📤 Ответ от Google Sheets:', result);
     
     if (result.success) {
       console.log('✅ Данные сохранены в Google Sheets');
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
     console.error('❌ Серверная ошибка:', error);
     res.status(500).json({
       success: false,
-      error: 'Внутренняя ошибка сервера'
+      error: 'Внутренняя ошибка сервера: ' + error.message
     });
   }
 }
