@@ -63,6 +63,10 @@
         .success { background: #4CAF50; }
         .error { background: #f44336; }
         .info { background: #2196F3; }
+        .loading { 
+            background: #ff9800; 
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -102,10 +106,17 @@
                     </button>
                 </form>
 
-                <!-- Кнопка теста API -->
-                <button class="btn" onclick="testAPI()" style="background: #ff9800;">
-                    🧪 Тест API
-                </button>
+                <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <button class="btn" onclick="testAPI()" style="background: #ff9800;">
+                        🧪 Тест API
+                    </button>
+                    <button class="btn" onclick="testGoogleDirect()" style="background: #9c27b0;">
+                        🔧 Тест Google Script
+                    </button>
+                    <button class="btn" onclick="checkCurrentUser()" style="background: #2196F3;">
+                        👤 Проверить пользователя
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -114,6 +125,7 @@
             <div class="card">
                 <h2>🏠 Главное меню</h2>
                 <p>Добро пожаловать, <span id="userNickname">Мама</span>! 👋</p>
+                <p><small>ID: <span id="userId">-</span></small></p>
                 
                 <button class="btn" onclick="showSection('walk')">🚶‍♀️ Идем гулять</button>
                 <button class="btn" onclick="showSection('find')">🔍 Найти маму</button>
@@ -121,10 +133,14 @@
                 <button class="btn" onclick="showSection('nanny')">👶 Няня для ребенка</button>
                 <button class="btn" onclick="showSection('settings')">⚙️ Настройки</button>
 
-                <!-- Кнопка выхода -->
-                <button class="btn" onclick="logout()" style="background: #f44336;">
-                    🚪 Выйти
-                </button>
+                <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <button class="btn" onclick="logout()" style="background: #f44336;">
+                        🚪 Выйти
+                    </button>
+                    <button class="btn" onclick="debugInfo()" style="background: #607d8b;">
+                        🐛 Отладка
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -134,7 +150,7 @@
         let user = null;
         let currentUser = null;
 
-        // ВРЕМЕННАЯ УПРОЩЕННАЯ инициализация
+        // Инициализация Telegram Mini App
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
@@ -148,8 +164,8 @@
                 const savedUser = localStorage.getItem('mamaRyadomUser');
                 if (savedUser) {
                     currentUser = JSON.parse(savedUser);
+                    console.log('✅ Пользователь восстановлен:', currentUser);
                     showMainScreen();
-                    console.log('✅ Пользователь восстановлен из localStorage');
                 } else {
                     showScreen('registrationScreen');
                     if (user) {
@@ -158,7 +174,6 @@
                             <small>Заполни профиль чтобы начать</small>
                         `;
                     }
-                    console.log('❌ Пользователь не найден, показываем регистрацию');
                 }
                 
             } catch (error) {
@@ -167,7 +182,7 @@
             }
         }
 
-        // ВРЕМЕННАЯ УПРОЩЕННАЯ регистрация
+        // Регистрация пользователя
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
@@ -175,43 +190,47 @@
             
             try {
                 // Пытаемся сохранить через API
-                try {
-                    const response = await fetch('/api/save-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(userData)
-                    });
+                showStatus('Сохраняем данные...', 'info');
+                
+                const response = await fetch('/api/save-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                console.log('✅ Результат сохранения:', result);
+                
+                if (result.success) {
+                    currentUser = result.user;
+                    // Сохраняем в localStorage
+                    localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                    showStatus('✅ Регистрация успешна! Данные сохранены.', 'success');
                     
-                    const result = await response.json();
-                    console.log('✅ Результат сохранения через API:', result);
-                    
-                    if (result.success) {
-                        currentUser = result.user;
-                        showStatus('✅ Регистрация успешна! (данные сохранены)', 'success');
-                    } else {
-                        throw new Error('API вернул ошибку: ' + (result.error || 'неизвестная ошибка'));
-                    }
-                } catch (apiError) {
-                    // Если API не работает - сохраняем локально
-                    console.log('⚠️ API не доступен, сохраняем локально:', apiError);
-                    currentUser = {
-                        ...userData,
-                        first_name: user?.first_name || 'Мама',
-                        registered: true
-                    };
-                    showStatus('✅ Регистрация успешна! (локальное сохранение)', 'success');
+                    setTimeout(() => {
+                        showMainScreen();
+                    }, 1500);
+                } else {
+                    throw new Error(result.error || 'Ошибка сохранения');
                 }
                 
-                // Сохраняем в localStorage чтобы "запомнить" пользователя
+            } catch (error) {
+                console.error('❌ Ошибка регистрации:', error);
+                
+                // Если API не работает - сохраняем локально
+                currentUser = {
+                    ...userData,
+                    first_name: user?.first_name || 'Мама',
+                    registered: true,
+                    localSave: true
+                };
+                
                 localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                showStatus('✅ Регистрация успешна! (локальное сохранение)', 'success');
                 
                 setTimeout(() => {
                     showMainScreen();
                 }, 1500);
-                
-            } catch (error) {
-                console.error('❌ Ошибка регистрации:', error);
-                showStatus('❌ Ошибка: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Начать пользоваться';
@@ -220,10 +239,12 @@
 
         // Выход из аккаунта
         function logout() {
-            localStorage.removeItem('mamaRyadomUser');
-            currentUser = null;
-            showScreen('registrationScreen');
-            showStatus('👋 Вы вышли из аккаунта', 'info');
+            if (confirm('Вы уверены что хотите выйти?')) {
+                localStorage.removeItem('mamaRyadomUser');
+                currentUser = null;
+                showScreen('registrationScreen');
+                showStatus('👋 Вы вышли из аккаунта', 'info');
+            }
         }
 
         // Показ экранов
@@ -237,6 +258,7 @@
         function showMainScreen() {
             if (currentUser) {
                 document.getElementById('userNickname').textContent = currentUser.nickname;
+                document.getElementById('userId').textContent = currentUser.userId;
             }
             showScreen('mainScreen');
         }
@@ -259,10 +281,10 @@
             alert(`Раздел "${sectionNames[section]}" в разработке 🚧`);
         }
 
-        // Тест API (простая версия)
+        // Тест API
         async function testAPI() {
             try {
-                showStatus('Тестируем подключение...', 'info');
+                showStatus('Тестируем API...', 'info');
                 const response = await fetch('/api/test-google');
                 const result = await response.json();
                 
@@ -274,6 +296,44 @@
             } catch (error) {
                 showStatus('❌ Нет подключения к API: ' + error.message, 'error');
             }
+        }
+
+        // Тест Google Script напрямую
+        async function testGoogleDirect() {
+            try {
+                showStatus('Тестируем Google Script...', 'info');
+                
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxlSoGC2EIqb9VVKDSacEwb-79AnEeXomTYK5EMclnmJTDqTxs5Tq1pESZkaW5dk40Z7w/exec');
+                const result = await response.json();
+                
+                showStatus('✅ Google Script работает!', 'success');
+                console.log('✅ Google Script ответ:', result);
+            } catch (error) {
+                showStatus('❌ Google Script ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Проверить текущего пользователя
+        function checkCurrentUser() {
+            const savedUser = localStorage.getItem('mamaRyadomUser');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                alert(`Текущий пользователь:\nНик: ${user.nickname}\nID: ${user.userId}\nГород: ${user.city}`);
+            } else {
+                alert('Пользователь не найден');
+            }
+        }
+
+        // Отладочная информация
+        function debugInfo() {
+            const info = {
+                telegramUser: user,
+                currentUser: currentUser,
+                localStorage: localStorage.getItem('mamaRyadomUser'),
+                timestamp: new Date().toISOString()
+            };
+            console.log('🐛 Отладочная информация:', info);
+            alert('Отладочная информация выведена в консоль');
         }
 
         // Обработчик формы регистрации
@@ -302,6 +362,9 @@
 
         // Глобальные функции для кнопок
         window.testAPI = testAPI;
+        window.testGoogleDirect = testGoogleDirect;
+        window.checkCurrentUser = checkCurrentUser;
+        window.debugInfo = debugInfo;
         window.showSection = showSection;
         window.logout = logout;
     </script>
