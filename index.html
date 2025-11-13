@@ -129,7 +129,7 @@
         let user = null;
         let currentUser = null;
 
-        // УПРОЩЕННАЯ инициализация Telegram Mini App
+        // ОБНОВЛЕННАЯ инициализация с проверкой пользователя
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
@@ -139,15 +139,42 @@
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
-                // Сразу показываем регистрацию (БЕЗ ПРОВЕРКИ API)
-                showScreen('registrationScreen');
-                
-                // Показываем данные пользователя если есть
                 if (user) {
-                    document.getElementById('regStatus').innerHTML = `
-                        Привет, ${user.first_name}! 👋<br>
-                        <small>Заполни профиль чтобы начать</small>
-                    `;
+                    // Пытаемся проверить, зарегистрирован ли пользователь
+                    try {
+                        const response = await fetch('/api/check-user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: user.id })
+                        });
+                        
+                        const result = await response.json();
+                        console.log('📊 Результат проверки:', result);
+                        
+                        if (result.exists) {
+                            // Пользователь зарегистрирован - показываем главный экран
+                            currentUser = result.user;
+                            showMainScreen();
+                        } else {
+                            // Пользователь не найден - показываем регистрацию
+                            showScreen('registrationScreen');
+                            document.getElementById('regStatus').innerHTML = `
+                                Привет, ${user.first_name}! 👋<br>
+                                <small>Заполни профиль чтобы начать</small>
+                            `;
+                        }
+                    } catch (apiError) {
+                        // Если API не работает - показываем регистрацию
+                        console.error('❌ Ошибка API:', apiError);
+                        showScreen('registrationScreen');
+                        document.getElementById('regStatus').innerHTML = `
+                            Привет! 👋<br>
+                            <small>Создайте ваш профиль</small>
+                        `;
+                    }
+                } else {
+                    // Нет данных пользователя
+                    showScreen('registrationScreen');
                 }
                 
             } catch (error) {
@@ -156,29 +183,38 @@
             }
         }
 
-        // УПРОЩЕННАЯ регистрация пользователя
+        // ОБНОВЛЕННАЯ регистрация с сохранением в Google Sheets
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Регистрация...';
             
             try {
-                // Пока просто сохраняем локально (без API)
-                currentUser = {
-                    ...userData,
-                    first_name: user?.first_name || 'Мама'
-                };
+                // Сохраняем через API
+                const response = await fetch('/api/save-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
                 
-                showStatus('✅ Регистрация успешна!', 'success');
+                const result = await response.json();
+                console.log('✅ Результат сохранения:', result);
                 
-                // Ждем немного и показываем главный экран
-                setTimeout(() => {
-                    showMainScreen();
-                }, 1500);
+                if (result.success) {
+                    showStatus('✅ Регистрация успешна!', 'success');
+                    currentUser = result.user;
+                    
+                    // Ждем и показываем главный экран
+                    setTimeout(() => {
+                        showMainScreen();
+                    }, 1500);
+                } else {
+                    throw new Error(result.error || 'Ошибка сохранения');
+                }
                 
             } catch (error) {
                 console.error('❌ Ошибка регистрации:', error);
-                showStatus('❌ Ошибка регистрации', 'error');
+                showStatus('❌ Ошибка: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Начать пользоваться';
