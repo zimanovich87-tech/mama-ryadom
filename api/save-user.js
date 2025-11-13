@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     console.log('📥 Получены данные:', req.body);
     
     // ТВОЙ_URL_ВЕБ_ПРИЛОЖЕНИЯ из Apps Script
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/ТВОЙ_ID/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIZm4Sw5tgFU7_aTQ9rNF0NtyDXga0iSPblb8kVikX/dev';
     
     // Отправляем данные в Google Apps Script
     const response = await fetch(APPS_SCRIPT_URL, {
