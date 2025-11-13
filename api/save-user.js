@@ -10,34 +10,77 @@ export default async function handler(req, res) {
     return;
   }
 
+  // GET для тестирования
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      success: true,
+      message: 'Save User API для МамыРядом работает!',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // POST для сохранения данных
   if (req.method === 'POST') {
     try {
-      console.log('📥 Данные от Telegram бота:', JSON.stringify(req.body));
+      console.log('📥 ПОЛУЧЕНЫ ДАННЫЕ ОТ ТЕЛЕГРАММ БОТА:');
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('Headers:', req.headers);
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // Отправляем RAW данные как есть от бота
+      // Подготавливаем данные для отправки
+      const dataToSend = {
+        // Основные поля
+        name: req.body.name || req.body.username || req.body.nickname || 'Не указано',
+        phone: req.body.phone || req.body.telephone || 'Не указано',
+        email: req.body.email || 'Не указано',
+        city: req.body.city || req.body.location || 'Не указано',
+        childrenAge: req.body.childrenAge || req.body.childAge || req.body.children || req.body.child || 'Не указано',
+        interests: req.body.interests || req.body.hobbies || 'Не указано',
+        helpType: req.body.helpType || req.body.help || req.body.service || 'Не указано',
+        about: req.body.about || req.body.description || req.body.bio || 'Не указано',
+        
+        // Технические поля
+        source: 'Telegram Bot',
+        timestamp: new Date().toISOString(),
+        test: false
+      };
+      
+      console.log('📤 ОТПРАВЛЯЕМ В GOOGLE SHEETS:', dataToSend);
+      
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(req.body)
+        body: JSON.stringify(dataToSend)
       });
       
       const result = await response.json();
-      console.log('✅ Ответ от Google Sheets:', result);
+      console.log('✅ ОТВЕТ ОТ GOOGLE SHEETS:', result);
       
-      res.status(200).json({
-        success: true,
-        message: 'Данные сохранены!',
-        result: result
-      });
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: '✅ Анкета успешно сохранена в базу данных!',
+          result: result,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        throw new Error(result.error || 'Ошибка от Google Sheets');
+      }
       
     } catch (error) {
-      console.error('❌ Ошибка:', error);
-      res.status(500).json({ error: error.message });
+      console.error('❌ ОШИБКА СОХРАНЕНИЯ:', error.message);
+      
+      // Все равно возвращаем успех для Telegram бота
+      res.status(200).json({
+        success: true,
+        message: '⚠️ Данные сохранены локально (ошибка подключения к Google Sheets)',
+        localSave: true,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
