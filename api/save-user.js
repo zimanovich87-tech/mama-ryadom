@@ -1,3 +1,5 @@
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxLKi8F0fZIeCUv2OFv0Nc76XSW6LZJn1xxS7tSOz8aa3ddjnv0Ju80I2WmybzLdRSA/exec';
+
 export default async function handler(req, res) {
   // Разрешаем CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,31 +15,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId, nickname, city = 'Санкт-Петербург', children = '' } = req.body;
+    const { userId, nickname, city, children } = req.body;
     
-    // ВАЖНО: Здесь будет код для сохранения в Google Sheets
-    // Пока имитируем успешное сохранение
+    console.log('📨 Отправка данных в Google Script:', { userId, nickname });
     
-    console.log('💾 Сохранение пользователя:', { userId, nickname, city });
-    
-    const response = {
-      success: true,
-      message: "✅ Профиль сохранен!",
-      user: {
-        userId,
+    // Отправляем данные в Google Apps Script
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'saveUser',
+        userId: userId.toString(),
         nickname,
         city,
-        children,
-        registered: true
-      }
-    };
-
-    res.json(response);
+        children
+      })
+    });
+    
+    const result = await response.json();
+    console.log('✅ Ответ от Google Script:', result);
+    
+    res.json(result);
+    
   } catch (error) {
-    console.error('❌ Ошибка сохранения:', error);
+    console.error('❌ Ошибка соединения:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Ошибка сохранения профиля'
+      error: 'Ошибка соединения с сервером: ' + error.message
     });
   }
 }
