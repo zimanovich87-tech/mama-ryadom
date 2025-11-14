@@ -317,6 +317,11 @@
         .hidden {
             display: none;
         }
+        
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="day-theme">
@@ -329,7 +334,7 @@
         <div id="loadingScreen" class="screen active">
             <div class="header">
                 <div class="greeting">👋 Мама Рядом</div>
-                <div class="subtitle">Загрузка...</div>
+                <div class="subtitle">Проверка доступа...</div>
             </div>
         </div>
 
@@ -475,6 +480,16 @@
     </div>
 
     <script>
+        // Конфигурация Google Sheets
+        const SPREADSHEET_ID = '1zCboXVlUWnfhYiv7qQUbz-gHxuCkQ-dGO8551f8crC0';
+        const SHEETS = {
+            USERS: 'user_profiles',
+            ADMINS: 'admins', 
+            MANAGERS: 'managers',
+            BLOCKED: 'blocked_users',
+            BLACKLIST: 'blacklist'
+        };
+
         let tg = null;
         let user = null;
         let currentUser = null;
@@ -526,27 +541,36 @@
             }
         }
 
-        // Проверка роли пользователя
+        // Проверка роли пользователя в Google Sheets
         async function checkUserRole() {
             try {
-                // Здесь должна быть проверка в Google Sheets
-                // Временная заглушка - проверяем по userId
-                if (user && user.id === 691563949) { // Замени на реальный ID администратора
-                    userRole = 'manager';
-                } else if (user && user.id === 123456789) { // Замени на реальный ID администратора
-                    userRole = 'admin';
-                } else {
+                if (!user || !user.id) {
                     userRole = 'user';
+                    return;
                 }
+
+                const userId = user.id.toString();
                 
-                console.log('🎭 Роль пользователя:', userRole);
-                
-                // Показываем соответствующие кнопки
-                if (userRole === 'admin') {
-                    document.getElementById('adminButton').classList.remove('hidden');
-                } else if (userRole === 'manager') {
+                // Проверяем в листе руководителей
+                const isManager = await checkUserInSheet(SHEETS.MANAGERS, userId);
+                if (isManager) {
+                    userRole = 'manager';
                     document.getElementById('managerButton').classList.remove('hidden');
+                    console.log('🎭 Пользователь является руководителем');
+                    return;
                 }
+                
+                // Проверяем в листе администраторов
+                const isAdmin = await checkUserInSheet(SHEETS.ADMINS, userId);
+                if (isAdmin) {
+                    userRole = 'admin';
+                    document.getElementById('adminButton').classList.remove('hidden');
+                    console.log('🎭 Пользователь является администратором');
+                    return;
+                }
+                
+                userRole = 'user';
+                console.log('🎭 Пользователь является обычным пользователем');
                 
             } catch (error) {
                 console.error('Ошибка проверки роли:', error);
@@ -554,12 +578,61 @@
             }
         }
 
+        // Проверка пользователя в конкретном листе
+        async function checkUserInSheet(sheetName, userId) {
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'check_user',
+                    sheet_name: sheetName,
+                    user_id: userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+                console.log(`🔍 Проверка пользователя в листе ${sheetName}:`, url);
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                console.log(`📊 Результат проверки в ${sheetName}:`, result);
+                return result.success && result.exists;
+                
+            } catch (error) {
+                console.error(`❌ Ошибка проверки в листе ${sheetName}:`, error);
+                return false;
+            }
+        }
+
         // Проверка блокировки пользователя
         async function checkUserBlocked() {
             try {
-                // Здесь должна быть проверка в Google Sheets
-                // Временная заглушка
+                if (!user || !user.id) return false;
+
+                const userId = user.id.toString();
+                
+                // Проверяем в черном списке (перманентная блокировка)
+                const inBlacklist = await checkUserInSheet(SHEETS.BLACKLIST, userId);
+                if (inBlacklist) {
+                    return {
+                        type: 'blacklist',
+                        message: 'Вы не можете зайти в приложение, так как вы нарушили правила приложения'
+                    };
+                }
+                
+                // Проверяем во временных блокировках
+                const inBlocked = await checkUserInSheet(SHEETS.BLOCKED, userId);
+                if (inBlocked) {
+                    // Здесь можно добавить проверку даты разблокировки
+                    return {
+                        type: 'temporary',
+                        message: 'Вы не можете зайти в приложение до [время]'
+                    };
+                }
+                
                 return false;
+                
             } catch (error) {
                 console.error('Ошибка проверки блокировки:', error);
                 return false;
@@ -792,7 +865,7 @@
         }
 
         // Функции черного списка
-        function searchUser() {
+        async function searchUser() {
             const username = document.getElementById('userSearch').value;
             if (!username) {
                 alert('Введите username пользователя');
@@ -805,16 +878,71 @@
             document.getElementById('userResult').classList.remove('hidden');
         }
 
-        function blockUser(hours) {
+        async function blockUser(hours) {
             const username = document.getElementById('foundUsername').textContent;
-            alert(`Пользователь ${username} заблокирован на ${hours} час(ов)`);
-            // Здесь должна быть запись в Google Sheets
+            
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'block_user',
+                    username: username,
+                    hours: hours,
+                    admin_id: user.id,
+                    admin_username: currentUser.nickname,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.fromEntries(params))
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Пользователь ${username} заблокирован на ${hours} час(ов)`);
+                } else {
+                    alert(`❌ Ошибка блокировки: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Ошибка блокировки:', error);
+                alert(`❌ Ошибка блокировки пользователя`);
+            }
         }
 
-        function blacklistUser() {
+        async function blacklistUser() {
             const username = document.getElementById('foundUsername').textContent;
-            alert(`Пользователь ${username} добавлен в черный список`);
-            // Здесь должна быть запись в Google Sheets
+            
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'blacklist_user',
+                    username: username,
+                    admin_id: user.id,
+                    admin_username: currentUser.nickname,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.fromEntries(params))
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Пользователь ${username} добавлен в черный список`);
+                } else {
+                    alert(`❌ Ошибка: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Ошибка добавления в черный список:', error);
+                alert(`❌ Ошибка добавления в черный список`);
+            }
         }
 
         // Обработчик формы регистрации
