@@ -16,10 +16,18 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            color: white;
             height: 100vh;
             overflow: hidden;
             position: relative;
+            transition: color 0.5s ease;
+        }
+        
+        body.day-theme {
+            color: #1a1a1a;
+        }
+        
+        body.night-theme {
+            color: white;
         }
         
         .background {
@@ -62,41 +70,59 @@
         }
         
         .greeting {
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .day-theme .greeting {
+            text-shadow: 0 2px 4px rgba(255,255,255,0.5);
         }
         
         .subtitle {
             font-size: 16px;
             opacity: 0.9;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .day-theme .subtitle {
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+        
+        .buttons-container {
+            margin-top: auto;
+            margin-bottom: 30px;
         }
         
         .button-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
-            margin-top: auto;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         
-        .button-stack {
-            display: flex;
-            flex-direction: column;
+        .walk-buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
-            margin-top: auto;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+        
+        .walk-buttons-grid.show {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         .glass-button {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
             border: none;
-            padding: 18px 12px;
+            padding: 14px 8px;
             border-radius: 16px;
             font-size: 14px;
             font-weight: 600;
@@ -107,12 +133,30 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            min-height: 70px;
+            justify-content: center;
+        }
+        
+        .day-theme .glass-button {
+            background: rgba(255, 255, 255, 0.8);
+            color: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .night-theme .glass-button {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .glass-button:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-2px);
+        }
+        
+        .day-theme .glass-button:hover {
+            background: rgba(255, 255, 255, 0.9);
         }
         
         .glass-button:active {
@@ -126,6 +170,7 @@
         .button-text {
             font-size: 12px;
             line-height: 1.2;
+            font-weight: 600;
         }
         
         .card {
@@ -156,6 +201,11 @@
             backdrop-filter: blur(10px);
         }
         
+        .day-theme .status {
+            background: rgba(0,0,0,0.1);
+            color: #1a1a1a;
+        }
+        
         .success { background: rgba(76, 175, 80, 0.8); }
         .error { background: rgba(244, 67, 54, 0.8); }
         .info { background: rgba(33, 150, 243, 0.8); }
@@ -173,9 +223,24 @@
             width: 100%;
             backdrop-filter: blur(10px);
         }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
     </style>
 </head>
-<body>
+<body class="day-theme">
     <div class="background" id="background">
         <!-- Фон будет установлен через JavaScript -->
     </div>
@@ -229,40 +294,38 @@
                 <div class="subtitle" id="welcomeMessage">Как хорошо, что вы зашли, чтобы найти компанию для прогулки</div>
             </div>
             
-            <!-- Основные кнопки -->
-            <div id="mainButtons" class="button-grid">
-                <button class="glass-button" onclick="showWalkSection()">
-                    <span class="button-icon">🚶‍♀️</span>
-                    <span class="button-text">Идем гулять</span>
-                </button>
-                <button class="glass-button" onclick="showNannySection()">
-                    <span class="button-icon">👶</span>
-                    <span class="button-text">Няня</span>
-                </button>
-                <button class="glass-button" onclick="showSettings()">
-                    <span class="button-icon">⚙️</span>
-                    <span class="button-text">Настройки</span>
-                </button>
-            </div>
-            
-            <!-- Кнопки раздела "Идем гулять" -->
-            <div id="walkButtons" class="button-stack" style="display: none;">
-                <button class="glass-button" onclick="findMoms()">
-                    <span class="button-icon">🚶‍♀️</span>
-                    <span class="button-text">Идем гулять</span>
-                </button>
-                <button class="glass-button" onclick="searchMoms()">
-                    <span class="button-icon">🔍</span>
-                    <span class="button-text">Найти маму</span>
-                </button>
-                <button class="glass-button" onclick="showLocations()">
-                    <span class="button-icon">📍</span>
-                    <span class="button-text">Локации</span>
-                </button>
-                <button class="glass-button" onclick="backToMain()" style="margin-top: 20px;">
-                    <span class="button-icon">←</span>
-                    <span class="button-text">Назад</span>
-                </button>
+            <div class="buttons-container">
+                <!-- Кнопки раздела "Идем гулять" -->
+                <div id="walkButtons" class="walk-buttons-grid">
+                    <button class="glass-button" onclick="findMoms()">
+                        <span class="button-icon">🚶‍♀️</span>
+                        <span class="button-text">Идем гулять</span>
+                    </button>
+                    <button class="glass-button" onclick="searchMoms()">
+                        <span class="button-icon">🔍</span>
+                        <span class="button-text">Найти маму</span>
+                    </button>
+                    <button class="glass-button" onclick="showLocations()">
+                        <span class="button-icon">📍</span>
+                        <span class="button-text">Локации</span>
+                    </button>
+                </div>
+                
+                <!-- Основные кнопки -->
+                <div id="mainButtons" class="button-grid">
+                    <button class="glass-button" onclick="showWalkSection()">
+                        <span class="button-icon">🚶‍♀️</span>
+                        <span class="button-text">Идем гулять</span>
+                    </button>
+                    <button class="glass-button" onclick="showNannySection()">
+                        <span class="button-icon">👶</span>
+                        <span class="button-text">Няня</span>
+                    </button>
+                    <button class="glass-button" onclick="showSettings()">
+                        <span class="button-icon">⚙️</span>
+                        <span class="button-text">Настройки</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -271,6 +334,7 @@
         let tg = null;
         let user = null;
         let currentUser = null;
+        let isDayTime = true;
 
         // Инициализация Telegram Mini App
         async function initTelegramApp() {
@@ -282,8 +346,8 @@
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
-                // Устанавливаем фон в зависимости от времени
-                setBackgroundByTime();
+                // Устанавливаем фон и тему
+                setBackgroundAndTheme();
                 
                 // Проверяем есть ли сохраненный пользователь
                 const savedUser = localStorage.getItem('mamaRyadomUser');
@@ -291,7 +355,7 @@
                     currentUser = JSON.parse(savedUser);
                     console.log('✅ Пользователь восстановлен:', currentUser);
                     
-                    // Проверяем существует ли пользователь в базе
+                    // Проверяем существует ли пользователь в базе и не был ли удален
                     await checkUserInDatabase();
                     showMainScreen();
                 } else {
@@ -310,9 +374,10 @@
             }
         }
 
-        // Установка фона по времени
-        function setBackgroundByTime() {
+        // Установка фона и темы по времени
+        function setBackgroundAndTheme() {
             const background = document.getElementById('background');
+            const body = document.body;
             const now = new Date();
             const hour = now.getHours();
             
@@ -320,9 +385,13 @@
             if (hour >= 6 && hour < 22) {
                 // Дневной фон (6:00 - 22:00)
                 backgroundUrl = 'https://i.postimg.cc/BZ5RKvBr/1762526374.png';
+                body.className = 'day-theme';
+                isDayTime = true;
             } else {
                 // Ночной фон (22:00 - 6:00)
                 backgroundUrl = 'https://i.postimg.cc/7Z5BmPSy/1762867571.png';
+                body.className = 'night-theme';
+                isDayTime = false;
             }
             
             background.innerHTML = `<img src="${backgroundUrl}" alt="Background">`;
@@ -342,11 +411,33 @@
         // Проверка пользователя в базе данных
         async function checkUserInDatabase() {
             try {
-                // Здесь можно добавить проверку в базу данных
+                // Здесь можно добавить реальную проверку в базу данных
                 // Пока просто используем локальные данные
                 console.log('✅ Пользователь авторизован:', currentUser.nickname);
+                
+                // Проверяем, не был ли пользователь удален из базы
+                // Если нужно, можно добавить API запрос для проверки
+                return true;
             } catch (error) {
                 console.error('Ошибка проверки пользователя:', error);
+                return false;
+            }
+        }
+
+        // Проверка существования пользователя перед регистрацией
+        async function checkUserExists(userId) {
+            try {
+                // Здесь можно добавить реальную проверку в базу данных
+                // Пока проверяем только локально
+                const savedUser = localStorage.getItem('mamaRyadomUser');
+                if (savedUser) {
+                    const user = JSON.parse(savedUser);
+                    return user.userId === userId;
+                }
+                return false;
+            } catch (error) {
+                console.error('Ошибка проверки пользователя:', error);
+                return false;
             }
         }
 
@@ -357,6 +448,17 @@
             submitBtn.textContent = 'Регистрация...';
             
             try {
+                // Проверяем, не зарегистрирован ли пользователь уже
+                const userExists = await checkUserExists(userData.userId);
+                if (userExists) {
+                    showStatus('✅ Вы уже зарегистрированы!', 'success');
+                    currentUser = JSON.parse(localStorage.getItem('mamaRyadomUser'));
+                    setTimeout(() => {
+                        showMainScreen();
+                    }, 1000);
+                    return;
+                }
+                
                 showStatus('Сохраняем данные...', 'info');
                 
                 const response = await fetch('/api/save-user', {
@@ -372,7 +474,8 @@
                     currentUser = {
                         ...userData,
                         first_name: user?.first_name || 'Мама',
-                        registered: true
+                        registered: true,
+                        registrationDate: new Date().toISOString()
                     };
                     
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
@@ -393,7 +496,8 @@
                     ...userData,
                     first_name: user?.first_name || 'Мама',
                     registered: true,
-                    localSave: true
+                    localSave: true,
+                    registrationDate: new Date().toISOString()
                 };
                 
                 localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
@@ -423,9 +527,8 @@
                 document.getElementById('welcomeMessage').textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
             
-            // Показываем основные кнопки
-            document.getElementById('mainButtons').style.display = 'grid';
-            document.getElementById('walkButtons').style.display = 'none';
+            // Сбрасываем состояние кнопок
+            hideWalkButtons();
             
             showScreen('mainScreen');
         }
@@ -438,13 +541,15 @@
 
         // Навигация по разделам
         function showWalkSection() {
-            document.getElementById('mainButtons').style.display = 'none';
-            document.getElementById('walkButtons').style.display = 'flex';
+            const walkButtons = document.getElementById('walkButtons');
+            walkButtons.classList.add('show');
+            walkButtons.classList.add('fade-in-up');
         }
 
-        function backToMain() {
-            document.getElementById('mainButtons').style.display = 'grid';
-            document.getElementById('walkButtons').style.display = 'none';
+        function hideWalkButtons() {
+            const walkButtons = document.getElementById('walkButtons');
+            walkButtons.classList.remove('show');
+            walkButtons.classList.remove('fade-in-up');
         }
 
         function showNannySection() {
@@ -486,6 +591,18 @@
             registerUser(formData);
         });
 
+        // Обработчик клика вне кнопок для скрытия walk buttons
+        document.addEventListener('click', function(e) {
+            const walkButtons = document.getElementById('walkButtons');
+            const mainButtons = document.getElementById('mainButtons');
+            
+            if (walkButtons.classList.contains('show') && 
+                !e.target.closest('#walkButtons') && 
+                !e.target.closest('#mainButtons .glass-button')) {
+                hideWalkButtons();
+            }
+        });
+
         // Запуск при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(initTelegramApp, 500);
@@ -498,7 +615,6 @@
         window.findMoms = findMoms;
         window.searchMoms = searchMoms;
         window.showLocations = showLocations;
-        window.backToMain = backToMain;
     </script>
 </body>
 </html>
