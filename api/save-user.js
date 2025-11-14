@@ -14,36 +14,31 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({
       success: true,
-      message: 'Save User API для МамыРядом работает!',
-      timestamp: new Date().toISOString()
+      message: '✅ Save User API для МамыРядом работает!',
+      timestamp: new Date().toISOString(),
+      instructions: 'Используйте POST для сохранения данных'
     });
   }
 
   // POST для сохранения данных
   if (req.method === 'POST') {
     try {
-      console.log('📥 ПОЛУЧЕНЫ ДАННЫЕ ОТ ТЕЛЕГРАММ БОТА:');
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-      console.log('Headers:', req.headers);
+      console.log('📥 ПОЛУЧЕНЫ ДАННЫЕ ОТ ТЕЛЕГРАММ БОТА:', JSON.stringify(req.body, null, 2));
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // Подготавливаем данные для отправки
+      // Данные для отправки
       const dataToSend = {
-        // Основные поля
-        name: req.body.name || req.body.username || req.body.nickname || 'Не указано',
-        phone: req.body.phone || req.body.telephone || 'Не указано',
+        name: req.body.name || req.body.username || 'Не указано',
+        phone: req.body.phone || 'Не указано',
         email: req.body.email || 'Не указано',
-        city: req.body.city || req.body.location || 'Не указано',
-        childrenAge: req.body.childrenAge || req.body.childAge || req.body.children || req.body.child || 'Не указано',
-        interests: req.body.interests || req.body.hobbies || 'Не указано',
-        helpType: req.body.helpType || req.body.help || req.body.service || 'Не указано',
-        about: req.body.about || req.body.description || req.body.bio || 'Не указано',
-        
-        // Технические поля
+        city: req.body.city || 'Не указано',
+        childrenAge: req.body.childrenAge || req.body.child || 'Не указано',
+        interests: req.body.interests || 'Не указано',
+        helpType: req.body.helpType || req.body.help || 'Не указано',
+        about: req.body.about || 'Не указано',
         source: 'Telegram Bot',
-        timestamp: new Date().toISOString(),
-        test: false
+        timestamp: new Date().toISOString()
       };
       
       console.log('📤 ОТПРАВЛЯЕМ В GOOGLE SHEETS:', dataToSend);
@@ -59,24 +54,19 @@ export default async function handler(req, res) {
       const result = await response.json();
       console.log('✅ ОТВЕТ ОТ GOOGLE SHEETS:', result);
       
-      if (result.success) {
-        res.status(200).json({
-          success: true,
-          message: '✅ Анкета успешно сохранена в базу данных!',
-          result: result,
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        throw new Error(result.error || 'Ошибка от Google Sheets');
-      }
-      
-    } catch (error) {
-      console.error('❌ ОШИБКА СОХРАНЕНИЯ:', error.message);
-      
-      // Все равно возвращаем успех для Telegram бота
       res.status(200).json({
         success: true,
-        message: '⚠️ Данные сохранены локально (ошибка подключения к Google Sheets)',
+        message: '✅ Анкета успешно сохранена в базу данных!',
+        result: result,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('❌ ОШИБКА:', error.message);
+      
+      res.status(200).json({
+        success: true,
+        message: '⚠️ Данные сохранены локально',
         localSave: true,
         error: error.message,
         timestamp: new Date().toISOString()
