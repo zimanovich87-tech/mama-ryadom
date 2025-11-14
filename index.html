@@ -26,12 +26,25 @@
         
         body.day-theme {
             color: #1a1a1a;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         body.night-theme {
             color: white;
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        }
+        
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .container {
@@ -378,6 +391,10 @@
     </style>
 </head>
 <body class="day-theme">
+    <div class="background" id="background">
+        <!-- Фон будет установлен через JavaScript -->
+    </div>
+    
     <div class="container">
         <!-- Экран загрузки -->
         <div id="loadingScreen" class="screen active">
@@ -595,10 +612,12 @@
                     
                     // Проверяем совпадает ли user_id
                     if (currentUser.userId === user.id.toString()) {
-                        console.log('✅ User_id совпадает, проверяем роль');
+                        console.log('✅ User_id совпадает, проверяем роль в базе');
                         await checkUserRole();
                         showMainScreen();
                         return;
+                    } else {
+                        console.log('❌ User_id не совпадает, проверяем в базе');
                     }
                 }
                 
@@ -659,6 +678,8 @@
                 const response = await fetch(`${APPS_SCRIPT_URL}?action=check_user&user_id=${user.id.toString()}`);
                 const result = await response.json();
                 
+                console.log('🔍 Проверка роли:', result);
+                
                 if (result.success && result.exists) {
                     userRole = result.role || 'user';
                     currentUser.role = userRole;
@@ -666,6 +687,8 @@
                     // Обновляем в localStorage
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
                     console.log('🎭 Обновленная роль пользователя:', userRole);
+                } else {
+                    console.log('⚠️ Пользователь не найден при проверке роли');
                 }
                 
                 updateRoleButtons();
@@ -683,11 +706,14 @@
             isDayTime = hours >= 8 && hours < 20;
             
             const body = document.body;
+            const background = document.getElementById('background');
             
             if (isDayTime) {
                 body.className = 'day-theme';
+                background.innerHTML = '<img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" alt="Дневной фон">';
             } else {
                 body.className = 'night-theme';
+                background.innerHTML = '<img src="https://images.unsplash.com/photo-1532767153582-b1a0e5145009?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" alt="Ночной фон">';
             }
             
             updateTimeGreeting();
@@ -746,10 +772,14 @@
             adminButton.classList.add('hidden');
             managerButton.classList.add('hidden');
             
+            console.log('🔄 Обновление кнопок ролей, текущая роль:', userRole);
+            
             if (userRole === 'admin') {
                 adminButton.classList.remove('hidden');
+                console.log('✅ Показана кнопка администратора');
             } else if (userRole === 'manager') {
                 managerButton.classList.remove('hidden');
+                console.log('✅ Показана кнопка владельца');
             }
         }
 
@@ -968,22 +998,21 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const formData = new FormData();
-                formData.append('action', 'register_user');
-                formData.append('user_id', user.id.toString());
-                formData.append('username', user.username || `user_${user.id}`);
-                formData.append('first_name', user.first_name || '');
-                formData.append('last_name', user.last_name || '');
-                formData.append('nickname', nickname);
-                formData.append('city', city);
-                formData.append('children', children);
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: formData
+                const params = new URLSearchParams({
+                    action: 'register_user',
+                    user_id: user.id.toString(),
+                    username: user.username || `user_${user.id}`,
+                    first_name: user.first_name || '',
+                    last_name: user.last_name || '',
+                    nickname: nickname,
+                    city: city,
+                    children: children
                 });
                 
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
+                
+                console.log('📝 Результат регистрации:', result);
                 
                 if (result.success) {
                     currentUser = {
@@ -1006,7 +1035,7 @@
                 }
             } catch (error) {
                 console.error('Ошибка регистрации:', error);
-                alert('Ошибка при регистрации');
+                alert('Ошибка при регистрации: ' + error.message);
             }
         });
 
