@@ -2,7 +2,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   try {
-    // Тестовые данные
     const testData = {
       user_id: 123456789,
       username: 'test_user',
