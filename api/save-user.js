@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       console.log('=== 📥 ДАННЫЕ ОТ ТЕЛЕГРАММ БОТА ===');
-      console.log('Полные данные:', JSON.stringify(req.body, null, 2));
+      console.log(JSON.stringify(req.body, null, 2));
       console.log('================================');
       
       // ПОДГОТАВЛИВАЕМ ДАННЫЕ ДЛЯ APPS SCRIPT
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dataForAppsScript) // ОТПРАВЛЯЕМ РЕАЛЬНЫЕ ДАННЫЕ!
+        body: JSON.stringify(dataForAppsScript)
       });
       
       const result = await response.json();
