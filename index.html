@@ -614,10 +614,10 @@
                 }
                 
                 // Проверяем существование пользователя в базе
-                const userExists = await checkUserExists(user.id.toString());
-                console.log('🔍 Пользователь существует в базе:', userExists);
+                const userCheck = await checkUserRole(user.id.toString());
+                console.log('🔍 Результат проверки пользователя:', userCheck);
                 
-                if (!userExists) {
+                if (!userCheck.exists) {
                     // Пользователь не найден - показываем регистрацию
                     console.log('📝 Пользователь не найден, показываем регистрацию');
                     showScreen('registrationScreen');
@@ -628,17 +628,17 @@
                         `;
                     }
                 } else {
-                    // Пользователь найден - проверяем роль и показываем главный экран
-                    console.log('✅ Пользователь найден, проверяем роль');
-                    await checkUserRole();
+                    // Пользователь найден - показываем главный экран
+                    console.log('✅ Пользователь найден, роль:', userCheck.role);
+                    userRole = userCheck.role;
                     
-                    // Восстанавливаем данные пользователя из localStorage или создаем временные
+                    // Восстанавливаем данные пользователя из localStorage
                     const savedUser = localStorage.getItem('mamaRyadomUser');
                     if (savedUser) {
                         currentUser = JSON.parse(savedUser);
                         console.log('✅ Пользователь восстановлен из localStorage:', currentUser);
                     } else {
-                        // Создаем временные данные для входа
+                        // Если нет в localStorage, создаем временные данные
                         currentUser = {
                             userId: user.id,
                             nickname: 'Пользователь',
@@ -646,6 +646,13 @@
                             registered: true
                         };
                         console.log('✅ Созданы временные данные пользователя');
+                    }
+                    
+                    // Показываем кнопки ролей если нужно
+                    if (userRole === 'admin') {
+                        document.getElementById('adminButton').classList.remove('hidden');
+                    } else if (userRole === 'manager') {
+                        document.getElementById('managerButton').classList.remove('hidden');
                     }
                     
                     showMainScreen();
@@ -657,42 +664,9 @@
             }
         }
 
-        // Проверка существования пользователя
-        async function checkUserExists(userId) {
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'check_user_exists',
-                    user_id: userId,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-                console.log('🔍 Проверка существования пользователя:', url);
-                
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                console.log('📊 Результат проверки существования:', result);
-                return result.success && result.exists;
-                
-            } catch (error) {
-                console.error('Ошибка проверки существования:', error);
-                return false;
-            }
-        }
-
         // Проверка роли пользователя
-        async function checkUserRole() {
+        async function checkUserRole(userId) {
             try {
-                if (!user || !user.id) {
-                    userRole = 'user';
-                    return;
-                }
-
-                const userId = user.id.toString();
-                
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
                 const params = new URLSearchParams({
@@ -709,24 +683,18 @@
                 
                 console.log('📊 Результат проверки роли:', result);
                 
-                if (result.success && result.role) {
-                    userRole = result.role;
-                    
-                    if (userRole === 'admin') {
-                        document.getElementById('adminButton').classList.remove('hidden');
-                    } else if (userRole === 'manager') {
-                        document.getElementById('managerButton').classList.remove('hidden');
-                    }
-                    
-                    console.log('🎭 Роль пользователя:', userRole);
+                if (result.success) {
+                    return {
+                        exists: result.exists !== undefined ? result.exists : true,
+                        role: result.role || 'user'
+                    };
                 } else {
-                    userRole = 'user';
-                    console.log('🎭 Пользователь без специальной роли');
+                    return { exists: false, role: 'user' };
                 }
                 
             } catch (error) {
                 console.error('Ошибка проверки роли:', error);
-                userRole = 'user';
+                return { exists: false, role: 'user' };
             }
         }
 
@@ -834,7 +802,6 @@
                     username: userData.nickname,
                     city: userData.city,
                     children: userData.children,
-                    role: 'user',
                     source: 'Registration'
                 });
                 
@@ -864,7 +831,7 @@
                 
             } catch (error) {
                 console.error('❌ Ошибка регистрации:', error);
-                showStatus('❌ Ошибка регистрации', 'error');
+                showStatus('❌ Ошибка регистрации: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Начать пользоваться';
