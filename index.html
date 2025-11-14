@@ -612,12 +612,10 @@
                     
                     // Проверяем совпадает ли user_id
                     if (currentUser.userId === user.id.toString()) {
-                        console.log('✅ User_id совпадает, проверяем роль в базе');
-                        await checkUserRole();
+                        console.log('✅ User_id совпадает, показываем главный экран');
+                        await checkUserRoleFromLocalStorage();
                         showMainScreen();
                         return;
-                    } else {
-                        console.log('❌ User_id не совпадает, проверяем в базе');
                     }
                 }
                 
@@ -636,7 +634,13 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=check_user&user_id=${user.id.toString()}`);
+                const params = new URLSearchParams({
+                    action: 'check_user',
+                    user_id: user.id.toString(),
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 console.log('📊 Результат проверки в базе:', result);
@@ -670,31 +674,11 @@
             }
         }
 
-        // Проверка роли пользователя
-        async function checkUserRole() {
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=check_user&user_id=${user.id.toString()}`);
-                const result = await response.json();
-                
-                console.log('🔍 Проверка роли:', result);
-                
-                if (result.success && result.exists) {
-                    userRole = result.role || 'user';
-                    currentUser.role = userRole;
-                    
-                    // Обновляем в localStorage
-                    localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                    console.log('🎭 Обновленная роль пользователя:', userRole);
-                } else {
-                    console.log('⚠️ Пользователь не найден при проверке роли');
-                }
-                
-                updateRoleButtons();
-                
-            } catch (error) {
-                console.error('Ошибка проверки роли:', error);
+        // Проверка роли из localStorage
+        async function checkUserRoleFromLocalStorage() {
+            if (currentUser && currentUser.role) {
+                userRole = currentUser.role;
+                console.log('🎭 Роль пользователя из localStorage:', userRole);
                 updateRoleButtons();
             }
         }
@@ -726,27 +710,20 @@
             let greeting = '';
             
             if (hours >= 5 && hours < 12) {
-                greeting = 'Доброе утро';
+                greeting = 'Доброе утро!';
             } else if (hours >= 12 && hours < 18) {
-                greeting = 'Добрый день';
+                greeting = 'Добрый день!';
             } else if (hours >= 18 && hours < 23) {
-                greeting = 'Добрый вечер';
+                greeting = 'Добрый вечер!';
             } else {
-                greeting = 'Доброй ночи';
+                greeting = 'Доброй ночи!';
             }
             
             if (currentUser && currentUser.firstName) {
-                greeting += `, ${currentUser.firstName}!`;
-            } else if (currentUser && currentUser.username) {
-                greeting += `, ${currentUser.username}!`;
-            } else {
-                greeting += '!';
+                greeting += ` ${currentUser.firstName}`;
             }
             
-            const greetingElement = document.getElementById('timeGreeting');
-            if (greetingElement) {
-                greetingElement.textContent = greeting;
-            }
+            document.getElementById('timeGreeting').textContent = greeting;
         }
 
         // Показать экран
@@ -760,7 +737,6 @@
         // Показать главный экран
         function showMainScreen() {
             updateRoleButtons();
-            updateTimeGreeting();
             showScreen('mainScreen');
         }
 
@@ -772,14 +748,10 @@
             adminButton.classList.add('hidden');
             managerButton.classList.add('hidden');
             
-            console.log('🔄 Обновление кнопок ролей, текущая роль:', userRole);
-            
             if (userRole === 'admin') {
                 adminButton.classList.remove('hidden');
-                console.log('✅ Показана кнопка администратора');
             } else if (userRole === 'manager') {
                 managerButton.classList.remove('hidden');
-                console.log('✅ Показана кнопка владельца');
             }
         }
 
@@ -841,7 +813,13 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=search_user&username=${username}`);
+                const params = new URLSearchParams({
+                    action: 'search_user',
+                    username: username,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success && result.user) {
@@ -868,7 +846,15 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=block_user&user_id=${foundUserData.userId}&hours=${hours}&admin_id=${currentUser.userId}`);
+                const params = new URLSearchParams({
+                    action: 'block_user',
+                    user_id: foundUserData.userId,
+                    hours: hours,
+                    admin_id: currentUser.userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -892,7 +878,14 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=blacklist_user&user_id=${foundUserData.userId}&admin_id=${currentUser.userId}`);
+                const params = new URLSearchParams({
+                    action: 'blacklist_user',
+                    user_id: foundUserData.userId,
+                    admin_id: currentUser.userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -917,7 +910,13 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=search_user&username=${username}`);
+                const params = new URLSearchParams({
+                    action: 'search_user',
+                    username: username,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success && result.user) {
@@ -944,7 +943,14 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=assign_admin&user_id=${foundUserData.userId}&manager_id=${currentUser.userId}`);
+                const params = new URLSearchParams({
+                    action: 'assign_admin',
+                    user_id: foundUserData.userId,
+                    manager_id: currentUser.userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -968,7 +974,14 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=remove_admin&user_id=${foundUserData.userId}&manager_id=${currentUser.userId}`);
+                const params = new URLSearchParams({
+                    action: 'remove_admin',
+                    user_id: foundUserData.userId,
+                    manager_id: currentUser.userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1006,13 +1019,12 @@
                     last_name: user.last_name || '',
                     nickname: nickname,
                     city: city,
-                    children: children
+                    children: children,
+                    timestamp: new Date().toISOString()
                 });
                 
                 const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
                 const result = await response.json();
-                
-                console.log('📝 Результат регистрации:', result);
                 
                 if (result.success) {
                     currentUser = {
@@ -1031,11 +1043,11 @@
                     
                     showMainScreen();
                 } else {
-                    alert('Ошибка при регистрации: ' + (result.message || 'Неизвестная ошибка'));
+                    alert('Ошибка при регистрации');
                 }
             } catch (error) {
                 console.error('Ошибка регистрации:', error);
-                alert('Ошибка при регистрации: ' + error.message);
+                alert('Ошибка при регистрации');
             }
         });
 
