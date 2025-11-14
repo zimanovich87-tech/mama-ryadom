@@ -137,12 +137,12 @@
             transform: translateY(0);
         }
         
-        .large-button {
+        .standard-button {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border: none;
-            padding: 12px 8px;
+            padding: 15px 10px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 700;
@@ -159,52 +159,28 @@
             line-height: 1.2;
         }
         
-        .day-theme .large-button {
+        .day-theme .standard-button {
             background: rgba(255, 255, 255, 0.8);
             color: #1a1a1a;
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
-        .night-theme .large-button {
+        .night-theme .standard-button {
             background: rgba(255, 255, 255, 0.15);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .large-button:hover {
+        .standard-button:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-2px);
         }
         
-        .day-theme .large-button:hover {
+        .day-theme .standard-button:hover {
             background: rgba(255, 255, 255, 0.9);
         }
         
-        .large-button:active {
-            transform: translateY(0);
-        }
-        
-        .button-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .admin-buttons-grid,
-        .manager-buttons-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-        
-        .admin-buttons-grid.show,
-        .manager-buttons-grid.show {
-            opacity: 1;
+        .standard-button:active {
             transform: translateY(0);
         }
         
@@ -228,6 +204,7 @@
             gap: 4px;
             min-height: 60px;
             margin-top: 10px;
+            width: 100%;
         }
         
         .day-theme .role-button {
@@ -236,56 +213,21 @@
             border: 1px solid rgba(255, 0, 0, 0.3);
         }
         
-        .glass-button {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border: none;
-            padding: 8px 6px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-height: 45px;
+        .admin-buttons-grid,
+        .manager-buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
         }
         
-        .day-theme .glass-button {
-            background: rgba(255, 255, 255, 0.8);
-            color: #1a1a1a;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .night-theme .glass-button {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .glass-button:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-        }
-        
-        .day-theme .glass-button:hover {
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        .glass-button:active {
+        .admin-buttons-grid.show,
+        .manager-buttons-grid.show {
+            opacity: 1;
             transform: translateY(0);
-        }
-        
-        .button-text {
-            font-size: 11px;
-            line-height: 1.2;
-            font-weight: 600;
         }
         
         .card {
@@ -400,6 +342,11 @@
             backdrop-filter: blur(10px);
         }
         
+        .registration-form {
+            margin-top: auto;
+            margin-bottom: 50px;
+        }
+        
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -457,7 +404,7 @@
             
             <div id="regStatus" class="status info">Заполните информацию</div>
             
-            <form id="registrationForm">
+            <form id="registrationForm" class="registration-form">
                 <input type="text" id="nickname" placeholder="Придумайте никнейм" required>
                 <select id="city" required>
                     <option value="">Выберите город</option>
@@ -489,57 +436,57 @@
             
             <div class="buttons-container">
                 <!-- Основные кнопки -->
-                <div class="button-grid">
-                    <button class="glass-button" onclick="showWalkSection()">
-                        <span class="button-text">ИДЕМ ГУЛЯТЬ</span>
+                <div class="main-buttons-grid">
+                    <button class="standard-button" onclick="findMoms()">
+                        ИДЕМ ГУЛЯТЬ
                     </button>
-                    <button class="glass-button" onclick="showNannySection()">
-                        <span class="button-text">НЯНЯ</span>
+                    <button class="standard-button" onclick="searchMoms()">
+                        НАЙТИ МАМУ
                     </button>
-                    <button class="glass-button" onclick="showSettings()">
-                        <span class="button-text">НАСТРОЙКИ</span>
+                    <button class="standard-button" onclick="showLocations()">
+                        ЛОКАЦИИ
                     </button>
                 </div>
                 
-                <!-- Кнопки раздела "Идем гулять" -->
-                <div id="walkButtons" class="main-buttons-grid">
-                    <button class="large-button" onclick="findMoms()">
+                <!-- Основные кнопки навигации -->
+                <div class="main-buttons-grid">
+                    <button class="standard-button" onclick="showWalkSection()">
                         ИДЕМ ГУЛЯТЬ
                     </button>
-                    <button class="large-button" onclick="searchMoms()">
-                        НАЙТИ МАМУ
+                    <button class="standard-button" onclick="showNannySection()">
+                        НЯНЯ
                     </button>
-                    <button class="large-button" onclick="showLocations()">
-                        ЛОКАЦИИ
+                    <button class="standard-button" onclick="showSettings()">
+                        НАСТРОЙКИ
                     </button>
                 </div>
                 
                 <!-- Кнопки администратора -->
                 <div id="adminButtons" class="admin-buttons-grid">
-                    <button class="glass-button" onclick="showBlacklist()">
-                        <span class="button-text">ЧЕРНЫЙ СПИСОК</span>
+                    <button class="standard-button" onclick="showBlacklist()">
+                        ЧЕРНЫЙ СПИСОК
                     </button>
-                    <button class="glass-button" onclick="showEditor()">
-                        <span class="button-text">РЕДАКТОР</span>
+                    <button class="standard-button" onclick="showEditor()">
+                        РЕДАКТОР
                     </button>
                 </div>
                 
                 <!-- Кнопки руководителя -->
                 <div id="managerButtons" class="manager-buttons-grid">
-                    <button class="glass-button" onclick="showBlacklist()">
-                        <span class="button-text">ЧЕРНЫЙ СПИСОК</span>
+                    <button class="standard-button" onclick="showBlacklist()">
+                        ЧЕРНЫЙ СПИСОК
                     </button>
-                    <button class="glass-button" onclick="showEditor()">
-                        <span class="button-text">РЕДАКТОР</span>
+                    <button class="standard-button" onclick="showEditor()">
+                        РЕДАКТОР
                     </button>
-                    <button class="glass-button" onclick="showAds()">
-                        <span class="button-text">РЕКЛАМА</span>
+                    <button class="standard-button" onclick="showAds()">
+                        РЕКЛАМА
                     </button>
-                    <button class="glass-button" onclick="showNews()">
-                        <span class="button-text">НОВОСТИ</span>
+                    <button class="standard-button" onclick="showNews()">
+                        НОВОСТИ
                     </button>
-                    <button class="glass-button" onclick="showAdminAppointment()">
-                        <span class="button-text">НАЗНАЧЕНИЕ АДМИНИСТРАТОРА</span>
+                    <button class="standard-button" onclick="showAdminAppointment()">
+                        НАЗНАЧЕНИЕ АДМИНИСТРАТОРА
                     </button>
                 </div>
                 
@@ -618,8 +565,10 @@
         let user = null;
         let currentUser = null;
         let isDayTime = true;
-        let userRole = 'user'; // user, admin, manager
+        let userRole = 'user';
         let foundUserData = null;
+        let adminSectionVisible = false;
+        let managerSectionVisible = false;
 
         // Инициализация Telegram Mini App
         async function initTelegramApp() {
@@ -692,8 +641,8 @@
                 
                 console.log('📊 Результат проверки роли:', result);
                 
-                if (result.success) {
-                    userRole = result.role || 'manager'; // По умолчанию руководитель
+                if (result.success && result.role) {
+                    userRole = result.role;
                     
                     if (userRole === 'admin') {
                         document.getElementById('adminButton').classList.remove('hidden');
@@ -703,14 +652,13 @@
                     
                     console.log('🎭 Роль пользователя:', userRole);
                 } else {
-                    userRole = 'manager'; // По умолчанию руководитель
-                    document.getElementById('managerButton').classList.remove('hidden');
+                    userRole = 'user';
+                    console.log('🎭 Пользователь без специальной роли');
                 }
                 
             } catch (error) {
                 console.error('Ошибка проверки роли:', error);
-                userRole = 'manager'; // По умолчанию руководитель
-                document.getElementById('managerButton').classList.remove('hidden');
+                userRole = 'user';
             }
         }
 
@@ -809,21 +757,6 @@
             return 'Доброй ночи';
         }
 
-        // Проверка существования пользователя перед регистрацией
-        async function checkUserExists(userId) {
-            try {
-                const savedUser = localStorage.getItem('mamaRyadomUser');
-                if (savedUser) {
-                    const user = JSON.parse(savedUser);
-                    return user.userId === userId;
-                }
-                return false;
-            } catch (error) {
-                console.error('Ошибка проверки пользователя:', error);
-                return false;
-            }
-        }
-
         // Регистрация пользователя
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
@@ -831,17 +764,6 @@
             submitBtn.textContent = 'Регистрация...';
             
             try {
-                // Проверяем, не зарегистрирован ли пользователь уже
-                const userExists = await checkUserExists(userData.userId);
-                if (userExists) {
-                    showStatus('✅ Вы уже зарегистрированы!', 'success');
-                    currentUser = JSON.parse(localStorage.getItem('mamaRyadomUser'));
-                    setTimeout(() => {
-                        showMainScreen();
-                    }, 1000);
-                    return;
-                }
-                
                 showStatus('Сохраняем данные...', 'info');
                 
                 // Сохраняем в Google Sheets
@@ -924,6 +846,8 @@
             document.getElementById('walkButtons').classList.remove('show');
             document.getElementById('adminButtons').classList.remove('show');
             document.getElementById('managerButtons').classList.remove('show');
+            adminSectionVisible = false;
+            managerSectionVisible = false;
         }
 
         function showWalkSection() {
@@ -935,16 +859,26 @@
 
         function toggleAdminSection() {
             hideAllSections();
-            const adminButtons = document.getElementById('adminButtons');
-            adminButtons.classList.add('show');
-            adminButtons.classList.add('fade-in-up');
+            if (!adminSectionVisible) {
+                const adminButtons = document.getElementById('adminButtons');
+                adminButtons.classList.add('show');
+                adminButtons.classList.add('fade-in-up');
+                adminSectionVisible = true;
+            } else {
+                adminSectionVisible = false;
+            }
         }
 
         function toggleManagerSection() {
             hideAllSections();
-            const managerButtons = document.getElementById('managerButtons');
-            managerButtons.classList.add('show');
-            managerButtons.classList.add('fade-in-up');
+            if (!managerSectionVisible) {
+                const managerButtons = document.getElementById('managerButtons');
+                managerButtons.classList.add('show');
+                managerButtons.classList.add('fade-in-up');
+                managerSectionVisible = true;
+            } else {
+                managerSectionVisible = false;
+            }
         }
 
         function showBlacklist() {
@@ -999,11 +933,29 @@
                 return;
             }
             
-            // Здесь должна быть проверка в Google Sheets
-            // Временная заглушка
-            document.getElementById('foundUsername').textContent = username;
-            document.getElementById('userResult').classList.remove('hidden');
-            foundUserData = { username: username, userId: '123' }; // Заглушка
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'find_user',
+                    username: username,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
+                const result = await response.json();
+                
+                if (result.success && result.found) {
+                    foundUserData = result.user;
+                    document.getElementById('foundUsername').textContent = foundUserData.username;
+                    document.getElementById('userResult').classList.remove('hidden');
+                } else {
+                    alert('Пользователь не найден');
+                }
+            } catch (error) {
+                console.error('Ошибка поиска пользователя:', error);
+                alert('Ошибка поиска пользователя');
+            }
         }
 
         async function blockUser(hours) {
@@ -1089,11 +1041,29 @@
                 return;
             }
             
-            // Здесь должна быть проверка в Google Sheets
-            // Временная заглушка
-            document.getElementById('foundAdminUsername').textContent = username;
-            document.getElementById('adminResult').classList.remove('hidden');
-            foundUserData = { username: username, userId: '123' }; // Заглушка
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'find_user',
+                    username: username,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
+                const result = await response.json();
+                
+                if (result.success && result.found) {
+                    foundUserData = result.user;
+                    document.getElementById('foundAdminUsername').textContent = foundUserData.username;
+                    document.getElementById('adminResult').classList.remove('hidden');
+                } else {
+                    alert('Пользователь не найден');
+                }
+            } catch (error) {
+                console.error('Ошибка поиска пользователя:', error);
+                alert('Ошибка поиска пользователя');
+            }
         }
 
         async function assignAdmin() {
@@ -1109,6 +1079,8 @@
                     action: 'assign_admin',
                     user_id: foundUserData.userId,
                     username: foundUserData.username,
+                    city: foundUserData.city,
+                    children: foundUserData.children,
                     manager_id: user.id,
                     manager_username: currentUser.nickname,
                     timestamp: new Date().toISOString()
@@ -1201,7 +1173,7 @@
                 !e.target.closest('.main-buttons-grid') && 
                 !e.target.closest('.admin-buttons-grid') &&
                 !e.target.closest('.manager-buttons-grid') &&
-                !e.target.closest('.button-grid .glass-button')) {
+                !e.target.closest('.role-button')) {
                 hideAllSections();
             }
         });
