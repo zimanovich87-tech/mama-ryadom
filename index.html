@@ -573,13 +573,6 @@
     </div>
 
     <script>
-        const SPREADSHEET_ID = '1zCboXVlUWnfhYiv7qQUbz-gHxuCkQ-dGO8551f8crC0';
-        const SHEETS = {
-            USERS: 'user_profiles',
-            BLOCKED: 'blocked_users',
-            BLACKLIST: 'blacklist'
-        };
-
         let tg = null;
         let user = null;
         let currentUser = null;
@@ -606,56 +599,24 @@
                 
                 setBackgroundAndTheme();
                 
-                // Проверяем блокировку пользователя
-                const isBlocked = await checkUserBlocked();
-                if (isBlocked) {
-                    showBlockScreen(isBlocked);
-                    return;
-                }
-                
-                // Проверяем существование пользователя в базе
-                const userCheck = await checkUserRole(user.id.toString());
-                console.log('🔍 Результат проверки пользователя:', userCheck);
-                
-                if (!userCheck.exists) {
-                    // Пользователь не найден - показываем регистрацию
-                    console.log('📝 Пользователь не найден, показываем регистрацию');
-                    showScreen('registrationScreen');
-                    if (user.first_name) {
-                        document.getElementById('regStatus').innerHTML = `
-                            Привет, ${user.first_name}! 👋<br>
-                            <small>Заполни профиль чтобы начать</small>
-                        `;
+                // Проверяем есть ли сохраненный пользователь в localStorage
+                const savedUser = localStorage.getItem('mamaRyadomUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('✅ Пользователь восстановлен из localStorage:', currentUser);
+                    
+                    // Проверяем совпадает ли user_id
+                    if (currentUser.userId === user.id.toString()) {
+                        console.log('✅ User_id совпадает, показываем главный экран');
+                        await checkUserRoleFromLocalStorage();
+                        showMainScreen();
+                    } else {
+                        console.log('⚠️ User_id не совпадает, проверяем в базе');
+                        await checkUserInDatabase();
                     }
                 } else {
-                    // Пользователь найден - показываем главный экран
-                    console.log('✅ Пользователь найден, роль:', userCheck.role);
-                    userRole = userCheck.role;
-                    
-                    // Восстанавливаем данные пользователя из localStorage
-                    const savedUser = localStorage.getItem('mamaRyadomUser');
-                    if (savedUser) {
-                        currentUser = JSON.parse(savedUser);
-                        console.log('✅ Пользователь восстановлен из localStorage:', currentUser);
-                    } else {
-                        // Если нет в localStorage, создаем временные данные
-                        currentUser = {
-                            userId: user.id,
-                            nickname: 'Пользователь',
-                            first_name: user.first_name || 'Мама',
-                            registered: true
-                        };
-                        console.log('✅ Созданы временные данные пользователя');
-                    }
-                    
-                    // Показываем кнопки ролей если нужно
-                    if (userRole === 'admin') {
-                        document.getElementById('adminButton').classList.remove('hidden');
-                    } else if (userRole === 'manager') {
-                        document.getElementById('managerButton').classList.remove('hidden');
-                    }
-                    
-                    showMainScreen();
+                    console.log('📝 Пользователь не найден в localStorage, проверяем в базе');
+                    await checkUserInDatabase();
                 }
                 
             } catch (error) {
@@ -664,93 +625,40 @@
             }
         }
 
-        // Проверка роли пользователя
-        async function checkUserRole(userId) {
+        // Проверка пользователя в базе данных
+        async function checkUserInDatabase() {
             try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                console.log('🔍 Проверяем пользователя в базе данных...');
                 
-                const params = new URLSearchParams({
-                    action: 'check_role',
-                    user_id: userId,
-                    timestamp: new Date().toISOString()
-                });
+                // Временно используем localStorage для хранения статуса регистрации
+                // В реальном приложении здесь должен быть запрос к серверу
                 
-                const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-                console.log('🔍 Проверка роли пользователя:', url);
-                
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                console.log('📊 Результат проверки роли:', result);
-                
-                if (result.success) {
-                    return {
-                        exists: result.exists !== undefined ? result.exists : true,
-                        role: result.role || 'user'
-                    };
-                } else {
-                    return { exists: false, role: 'user' };
+                // Для демонстрации считаем, что пользователь не зарегистрирован
+                // и показываем экран регистрации
+                showScreen('registrationScreen');
+                if (user.first_name) {
+                    document.getElementById('regStatus').innerHTML = `
+                        Привет, ${user.first_name}! 👋<br>
+                        <small>Заполни профиль чтобы начать</small>
+                    `;
                 }
                 
             } catch (error) {
-                console.error('Ошибка проверки роли:', error);
-                return { exists: false, role: 'user' };
+                console.error('Ошибка проверки в базе:', error);
+                showScreen('registrationScreen');
             }
         }
 
-        // Проверка блокировки пользователя
-        async function checkUserBlocked() {
-            try {
-                if (!user || !user.id) return false;
-
-                const userId = user.id.toString();
-                
-                const inBlacklist = await checkUserInSheet(SHEETS.BLACKLIST, userId);
-                if (inBlacklist) {
-                    return {
-                        type: 'blacklist',
-                        message: 'Вы не можете зайти в приложение, так как вы нарушили правила приложения'
-                    };
+        // Проверка роли из localStorage
+        async function checkUserRoleFromLocalStorage() {
+            if (currentUser.role) {
+                userRole = currentUser.role;
+                if (userRole === 'admin') {
+                    document.getElementById('adminButton').classList.remove('hidden');
+                } else if (userRole === 'manager') {
+                    document.getElementById('managerButton').classList.remove('hidden');
                 }
-                
-                const inBlocked = await checkUserInSheet(SHEETS.BLOCKED, userId);
-                if (inBlocked) {
-                    return {
-                        type: 'temporary',
-                        message: 'Вы не можете зайти в приложение до [время]'
-                    };
-                }
-                
-                return false;
-                
-            } catch (error) {
-                console.error('Ошибка проверки блокировки:', error);
-                return false;
-            }
-        }
-
-        // Проверка пользователя в листе
-        async function checkUserInSheet(sheetName, userId) {
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'check_user',
-                    sheet_name: sheetName,
-                    user_id: userId,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-                
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                return result.success && result.exists;
-                
-            } catch (error) {
-                console.error(`❌ Ошибка проверки в листе ${sheetName}:`, error);
-                return false;
+                console.log('🎭 Роль пользователя из localStorage:', userRole);
             }
         }
 
@@ -815,6 +723,7 @@
                         ...userData,
                         first_name: user?.first_name || 'Мама',
                         registered: true,
+                        role: 'user',
                         registrationDate: new Date().toISOString()
                     };
                     
@@ -846,12 +755,6 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        function showBlockScreen(blockInfo) {
-            document.getElementById('blockTitle').textContent = 'Доступ ограничен';
-            document.getElementById('blockMessage').textContent = blockInfo.message;
-            showScreen('blockScreen');
-        }
-
         function showMainScreen() {
             if (currentUser) {
                 const greeting = getTimeGreeting();
@@ -874,7 +777,6 @@
             document.getElementById('adminButtons').classList.add('hidden');
             document.getElementById('managerButtons').classList.add('hidden');
             
-            // Сбрасываем стиль кнопки "Идем гулять"
             const walkButton = document.getElementById('walkButton');
             walkButton.classList.remove('walk-active');
             walkSectionVisible = false;
@@ -884,7 +786,6 @@
             if (!walkSectionVisible) {
                 hideAllSections();
                 document.getElementById('walkButtons').classList.remove('hidden');
-                // Затемняем кнопку "Идем гулять"
                 const walkButton = document.getElementById('walkButton');
                 walkButton.classList.add('walk-active');
                 walkSectionVisible = true;
@@ -947,219 +848,6 @@
             showMainScreen();
         }
 
-        // Функции черного списка
-        async function searchUser() {
-            const username = document.getElementById('userSearch').value;
-            if (!username) {
-                alert('Введите username пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'find_user',
-                    username: username,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
-                const result = await response.json();
-                
-                if (result.success && result.found) {
-                    foundUserData = result.user;
-                    document.getElementById('foundUsername').textContent = foundUserData.username;
-                    document.getElementById('userResult').classList.remove('hidden');
-                } else {
-                    alert('Пользователь не найден');
-                }
-            } catch (error) {
-                console.error('Ошибка поиска пользователя:', error);
-                alert('Ошибка поиска пользователя');
-            }
-        }
-
-        async function blockUser(hours) {
-            if (!foundUserData) {
-                alert('Сначала найдите пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'block_user',
-                    user_id: foundUserData.userId,
-                    username: foundUserData.username,
-                    hours: hours,
-                    admin_id: user.id,
-                    admin_username: currentUser.nickname,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(params))
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`✅ Пользователь ${foundUserData.username} заблокирован на ${hours} час(ов)`);
-                } else {
-                    alert(`❌ Ошибка блокировки: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Ошибка блокировки:', error);
-                alert(`❌ Ошибка блокировки пользователя`);
-            }
-        }
-
-        async function blacklistUser() {
-            if (!foundUserData) {
-                alert('Сначала найдите пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'blacklist_user',
-                    user_id: foundUserData.userId,
-                    username: foundUserData.username,
-                    admin_id: user.id,
-                    admin_username: currentUser.nickname,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(params))
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`✅ Пользователь ${foundUserData.username} добавлен в черный список`);
-                } else {
-                    alert(`❌ Ошибка: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Ошибка добавления в черный список:', error);
-                alert(`❌ Ошибка добавления в черный список`);
-            }
-        }
-
-        // Функции назначения администратора
-        async function searchAdmin() {
-            const username = document.getElementById('adminSearch').value;
-            if (!username) {
-                alert('Введите username пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'find_user',
-                    username: username,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
-                const result = await response.json();
-                
-                if (result.success && result.found) {
-                    foundUserData = result.user;
-                    document.getElementById('foundAdminUsername').textContent = foundUserData.username;
-                    document.getElementById('adminResult').classList.remove('hidden');
-                } else {
-                    alert('Пользователь не найден');
-                }
-            } catch (error) {
-                console.error('Ошибка поиска пользователя:', error);
-                alert('Ошибка поиска пользователя');
-            }
-        }
-
-        async function assignAdmin() {
-            if (!foundUserData) {
-                alert('Сначала найдите пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'assign_admin',
-                    user_id: foundUserData.userId,
-                    manager_id: user.id,
-                    manager_username: currentUser.nickname,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(params))
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`✅ Пользователь ${foundUserData.username} назначен администратором`);
-                } else {
-                    alert(`❌ Ошибка назначения: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Ошибка назначения администратора:', error);
-                alert(`❌ Ошибка назначения администратора`);
-            }
-        }
-
-        async function removeAdmin() {
-            if (!foundUserData) {
-                alert('Сначала найдите пользователя');
-                return;
-            }
-            
-            try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
-                
-                const params = new URLSearchParams({
-                    action: 'remove_admin',
-                    user_id: foundUserData.userId,
-                    manager_id: user.id,
-                    manager_username: currentUser.nickname,
-                    timestamp: new Date().toISOString()
-                });
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(params))
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`✅ Пользователь ${foundUserData.username} удален из администраторов`);
-                } else {
-                    alert(`❌ Ошибка удаления: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Ошибка удаления администратора:', error);
-                alert(`❌ Ошибка удаления администратора`);
-            }
-        }
-
         // Обработчик формы регистрации
         document.getElementById('registrationForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1199,12 +887,6 @@
         window.searchMoms = searchMoms;
         window.showLocations = showLocations;
         window.backToMain = backToMain;
-        window.searchUser = searchUser;
-        window.blockUser = blockUser;
-        window.blacklistUser = blacklistUser;
-        window.searchAdmin = searchAdmin;
-        window.assignAdmin = assignAdmin;
-        window.removeAdmin = removeAdmin;
     </script>
 </body>
 </html>
