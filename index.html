@@ -10,6 +10,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -142,7 +143,7 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border: none;
-            padding: 15px 10px;
+            padding: 15px 8px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 700;
@@ -189,7 +190,7 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 0, 0, 0.2);
             border: none;
-            padding: 15px 10px;
+            padding: 16px 10px;
             border-radius: 12px;
             font-size: 16px;
             font-weight: 700;
@@ -241,12 +242,25 @@
         
         input, select {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 16px;
+            margin: 10px 0;
             border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 16px;
             box-sizing: border-box;
+            background: white;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Стили для iOS */
+        select {
+            background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23333' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 12px;
+            padding-right: 40px;
         }
         
         .search-container {
@@ -255,10 +269,11 @@
         
         .search-input {
             width: 100%;
-            padding: 12px;
+            padding: 16px;
             border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 16px;
+            background: white;
         }
         
         .user-actions {
@@ -276,7 +291,7 @@
         }
         
         .action-button {
-            padding: 10px;
+            padding: 12px;
             border: none;
             border-radius: 8px;
             font-size: 12px;
@@ -332,8 +347,8 @@
             background: rgba(102, 126, 234, 0.9);
             color: white;
             border: none;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 16px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -345,6 +360,17 @@
         .registration-form {
             margin-top: auto;
             margin-bottom: 50px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
         }
         
         @keyframes fadeInUp {
@@ -369,6 +395,18 @@
         .loading {
             opacity: 0.7;
             pointer-events: none;
+        }
+        
+        /* iOS specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            input, select {
+                font-size: 16px; /* Предотвращает масштабирование на iOS */
+                min-height: 44px; /* Минимальная высота для тач-элементов */
+            }
+            
+            .standard-button, .role-button, .btn {
+                min-height: 44px; /* Минимальная высота для тач-элементов */
+            }
         }
     </style>
 </head>
@@ -405,22 +443,26 @@
             <div id="regStatus" class="status info">Заполните информацию</div>
             
             <form id="registrationForm" class="registration-form">
-                <input type="text" id="nickname" placeholder="Придумайте никнейм" required>
-                <select id="city" required>
-                    <option value="">Выберите город</option>
-                    <option value="Санкт-Петербург" selected>Санкт-Петербург</option>
-                    <option value="Москва">Москва</option>
-                    <option value="Казань">Казань</option>
-                    <option value="Новосибирск">Новосибирск</option>
-                    <option value="Екатеринбург">Екатеринбург</option>
-                </select>
-                <select id="children" required>
-                    <option value="">Дети</option>
-                    <option value="1 ребенок">1 ребенок</option>
-                    <option value="2 ребенка">2 ребенка</option>
-                    <option value="3+ детей">3+ детей</option>
-                    <option value="пока нет">Пока нет детей</option>
-                </select>
+                <div class="form-group">
+                    <input type="text" id="nickname" placeholder="Придумайте никнейм" required>
+                </div>
+                
+                <div class="form-group">
+                    <select id="city" required>
+                        <option value="">Выберите город</option>
+                        <option value="Санкт-Петербург" selected>Санкт-Петербург</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <select id="children" required>
+                        <option value="">Дети</option>
+                        <option value="1 ребенок">1 ребенок</option>
+                        <option value="2 ребенка">2 ребенка</option>
+                        <option value="3+ детей">3+ детей</option>
+                        <option value="пока нет">Пока нет детей</option>
+                    </select>
+                </div>
                 
                 <button type="submit" class="btn" id="submitBtn">
                     Начать пользоваться
@@ -435,19 +477,6 @@
             </div>
             
             <div class="buttons-container">
-                <!-- Основные кнопки -->
-                <div class="main-buttons-grid">
-                    <button class="standard-button" onclick="findMoms()">
-                        ИДЕМ ГУЛЯТЬ
-                    </button>
-                    <button class="standard-button" onclick="searchMoms()">
-                        НАЙТИ МАМУ
-                    </button>
-                    <button class="standard-button" onclick="showLocations()">
-                        ЛОКАЦИИ
-                    </button>
-                </div>
-                
                 <!-- Основные кнопки навигации -->
                 <div class="main-buttons-grid">
                     <button class="standard-button" onclick="showWalkSection()">
@@ -458,6 +487,19 @@
                     </button>
                     <button class="standard-button" onclick="showSettings()">
                         НАСТРОЙКИ
+                    </button>
+                </div>
+                
+                <!-- Кнопки раздела "Идем гулять" -->
+                <div id="walkButtons" class="main-buttons-grid">
+                    <button class="standard-button" onclick="findMoms()">
+                        ИДЕМ ГУЛЯТЬ
+                    </button>
+                    <button class="standard-button" onclick="searchMoms()">
+                        НАЙТИ МАМУ
+                    </button>
+                    <button class="standard-button" onclick="showLocations()">
+                        ЛОКАЦИИ
                     </button>
                 </div>
                 
@@ -793,9 +835,10 @@
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
                     showStatus('✅ Регистрация успешна!', 'success');
                     
+                    // Переход на главный экран после успешной регистрации
                     setTimeout(() => {
                         showMainScreen();
-                    }, 1500);
+                    }, 1000);
                 } else {
                     throw new Error(result.message || 'Ошибка сохранения');
                 }
