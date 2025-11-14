@@ -14,8 +14,8 @@ export default async function handler(req, res) {
       // Apps Script URL
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // ПРОСТО отправляем ПУСТОЙ POST
-      console.log('📤 Отправляем ПУСТОЙ POST в Apps Script');
+      // ПРОСТО отправляем ПУСТОЙ POST (без преобразования данных!)
+      console.log('📤 Отправляем ПУСТОЙ POST');
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       });
       
       const result = await response.json();
-      console.log('✅ Ответ от Apps Script:', result);
+      console.log('✅ Ответ:', result);
       
       res.status(200).json({
         success: true,
