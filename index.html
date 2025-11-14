@@ -276,7 +276,7 @@
         <div id="loadingScreen" class="screen active">
             <div class="header">
                 <div class="greeting">Мама Рядом</div>
-                <div class="subtitle">Загрузка...</div>
+                <div class="subtitle">Проверяем регистрацию...</div>
             </div>
         </div>
 
@@ -308,7 +308,7 @@
                 </select>
                 
                 <button type="submit" class="btn" id="submitBtn">
-                    Начать пользоваться
+                    Зарегистрироваться
                 </button>
             </form>
         </div>
@@ -369,18 +369,23 @@
                 // Устанавливаем фон и тему
                 setBackgroundAndTheme();
                 
-                // Проверяем есть ли сохраненный пользователь
-                const savedUser = localStorage.getItem('mamaRyadomUser');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    console.log('✅ Пользователь восстановлен:', currentUser);
-                    
-                    // Проверяем существует ли пользователь в базе и не был ли удален
-                    await checkUserInDatabase();
+                if (!user || !user.id) {
+                    console.log('❌ Пользователь Telegram не найден');
+                    showScreen('registrationScreen');
+                    return;
+                }
+
+                // Проверяем зарегистрирован ли пользователь
+                const userRegistered = await checkUserRegistration(user.id);
+                
+                if (userRegistered) {
+                    console.log('✅ Пользователь найден в базе');
+                    currentUser = userRegistered;
                     showMainScreen();
                 } else {
+                    console.log('❌ Пользователь не найден в базе - показываем регистрацию');
                     showScreen('registrationScreen');
-                    if (user) {
+                    if (user.first_name) {
                         document.getElementById('regStatus').innerHTML = `
                             Привет, ${user.first_name}!<br>
                             <small>Заполни профиль чтобы начать</small>
@@ -391,6 +396,55 @@
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 showScreen('registrationScreen');
+            }
+        }
+
+        // Проверка регистрации пользователя в базе данных
+        async function checkUserRegistration(userId) {
+            try {
+                // Сначала проверяем локальное хранилище
+                const savedUser = localStorage.getItem('mamaRyadomUser');
+                if (savedUser) {
+                    const localUser = JSON.parse(savedUser);
+                    if (localUser.userId == userId) {
+                        console.log('✅ Пользователь найден в локальном хранилище');
+                        return localUser;
+                    }
+                }
+
+                // Затем проверяем через API в Google Sheets
+                console.log('🔍 Ищем пользователя в базе данных...');
+                const userInDatabase = await findUserInDatabase(userId);
+                
+                if (userInDatabase) {
+                    console.log('✅ Пользователь найден в базе данных');
+                    // Сохраняем в локальное хранилище
+                    localStorage.setItem('mamaRyadomUser', JSON.stringify(userInDatabase));
+                    return userInDatabase;
+                }
+
+                console.log('❌ Пользователь не найден в базе данных');
+                return null;
+
+            } catch (error) {
+                console.error('Ошибка проверки регистрации:', error);
+                return null;
+            }
+        }
+
+        // Поиск пользователя в базе данных через API
+        async function findUserInDatabase(userId) {
+            try {
+                const response = await fetch(`/api/check-user?user_id=${userId}`);
+                const result = await response.json();
+                
+                if (result.success && result.user) {
+                    return result.user;
+                }
+                return null;
+            } catch (error) {
+                console.error('Ошибка поиска пользователя в базе:', error);
+                return null;
             }
         }
 
@@ -428,39 +482,6 @@
             return 'Доброй ночи';
         }
 
-        // Проверка пользователя в базе данных
-        async function checkUserInDatabase() {
-            try {
-                // Здесь можно добавить реальную проверку в базу данных
-                // Пока просто используем локальные данные
-                console.log('✅ Пользователь авторизован:', currentUser.nickname);
-                
-                // Проверяем, не был ли пользователь удален из базы
-                // Если нужно, можно добавить API запрос для проверки
-                return true;
-            } catch (error) {
-                console.error('Ошибка проверки пользователя:', error);
-                return false;
-            }
-        }
-
-        // Проверка существования пользователя перед регистрацией
-        async function checkUserExists(userId) {
-            try {
-                // Здесь можно добавить реальную проверку в базу данных
-                // Пока проверяем только локально
-                const savedUser = localStorage.getItem('mamaRyadomUser');
-                if (savedUser) {
-                    const user = JSON.parse(savedUser);
-                    return user.userId === userId;
-                }
-                return false;
-            } catch (error) {
-                console.error('Ошибка проверки пользователя:', error);
-                return false;
-            }
-        }
-
         // Регистрация пользователя
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
@@ -468,23 +489,17 @@
             submitBtn.textContent = 'Регистрация...';
             
             try {
-                // Проверяем, не зарегистрирован ли пользователь уже
-                const userExists = await checkUserExists(userData.userId);
-                if (userExists) {
-                    showStatus('✅ Вы уже зарегистрированы!', 'success');
-                    currentUser = JSON.parse(localStorage.getItem('mamaRyadomUser'));
-                    setTimeout(() => {
-                        showMainScreen();
-                    }, 1000);
-                    return;
-                }
-                
                 showStatus('Сохраняем данные...', 'info');
                 
+                // Отправляем данные для регистрации
                 const response = await fetch('/api/save-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
+                    body: JSON.stringify({
+                        ...userData,
+                        role: 'user', // Добавляем роль пользователя
+                        registration_type: 'complete' // Помечаем как полную регистрацию
+                    })
                 });
                 
                 const result = await response.json();
@@ -495,9 +510,11 @@
                         ...userData,
                         first_name: user?.first_name || 'Мама',
                         registered: true,
-                        registrationDate: new Date().toISOString()
+                        registrationDate: new Date().toISOString(),
+                        role: 'user'
                     };
                     
+                    // Сохраняем в локальное хранилище
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
                     showStatus('✅ Регистрация успешна!', 'success');
                     
@@ -517,18 +534,19 @@
                     first_name: user?.first_name || 'Мама',
                     registered: true,
                     localSave: true,
-                    registrationDate: new Date().toISOString()
+                    registrationDate: new Date().toISOString(),
+                    role: 'user'
                 };
                 
                 localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                showStatus('✅ Регистрация успешна!', 'success');
+                showStatus('✅ Регистрация успешна! (локальное сохранение)', 'success');
                 
                 setTimeout(() => {
                     showMainScreen();
                 }, 1500);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Начать пользоваться';
+                submitBtn.textContent = 'Зарегистрироваться';
             }
         }
 
@@ -596,15 +614,25 @@
         document.getElementById('registrationForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            if (!user || !user.id) {
+                showStatus('❌ Ошибка: пользователь Telegram не найден', 'error');
+                return;
+            }
+            
             const formData = {
-                userId: user?.id || Math.floor(Math.random() * 1000000),
-                nickname: document.getElementById('nickname').value,
+                userId: user.id,
+                nickname: document.getElementById('nickname').value.trim(),
                 city: document.getElementById('city').value,
                 children: document.getElementById('children').value
             };
             
             if (!formData.nickname || !formData.city || !formData.children) {
                 showStatus('❌ Заполните все поля', 'error');
+                return;
+            }
+            
+            if (formData.nickname === 'Не указан') {
+                showStatus('❌ Введите реальный никнейм', 'error');
                 return;
             }
             
