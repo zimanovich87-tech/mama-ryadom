@@ -16,30 +16,28 @@ export default async function handler(req, res) {
       console.log(JSON.stringify(req.body, null, 2));
       console.log('================================');
       
-      // ПОДГОТАВЛИВАЕМ ДАННЫЕ ДЛЯ APPS SCRIPT
-      const dataForAppsScript = {
-        user_id: req.body.userId,
-        username: req.body.nickname, 
-        city: req.body.city,
-        children: req.body.children,
+      // Создаем URL с GET параметрами
+      const baseUrl = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
+      
+      const params = new URLSearchParams({
+        action: 'save_user',
+        user_id: req.body.userId || '',
+        username: req.body.nickname || '',
+        city: req.body.city || '',
+        children: req.body.children || '',
         source: 'Telegram Mini App',
         timestamp: new Date().toISOString()
-      };
-      
-      console.log('📤 ОТПРАВЛЯЕМ ДАННЫЕ В APPS SCRIPT:', dataForAppsScript);
-      
-      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
-      
-      const response = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataForAppsScript)
       });
       
+      const appsScriptUrl = `${baseUrl}?${params.toString()}`;
+      
+      console.log('📤 Отправляем GET запрос:', appsScriptUrl);
+      
+      // Отправляем GET запрос
+      const response = await fetch(appsScriptUrl);
       const result = await response.json();
-      console.log('✅ ОТВЕТ ОТ APPS SCRIPT:', result);
+      
+      console.log('✅ Ответ от Apps Script:', result);
       
       res.status(200).json({
         success: true,
@@ -48,7 +46,7 @@ export default async function handler(req, res) {
       });
       
     } catch (error) {
-      console.error('❌ ОШИБКА:', error);
+      console.error('❌ Ошибка:', error);
       
       res.status(200).json({
         success: true,
