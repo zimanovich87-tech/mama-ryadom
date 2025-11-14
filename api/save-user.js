@@ -1,18 +1,3 @@
-import { GoogleAuth } from 'google-auth-library';
-import { google } from 'googleapis';
-
-// Настройки Google Sheets
-const auth = new GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
-
-const SPREADSHEET_ID = '1zCboXVlUWnfhYiv7qQUbz-gHxuCkQ-dGO8551f8crC0';
-const SHEET_NAME = 'user_profiles';
-
 export default async function handler(req, res) {
   // Разрешаем CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -29,7 +14,7 @@ export default async function handler(req, res) {
     try {
       console.log('📥 Данные от Telegram бота:', req.body);
       
-      // Упрощенные данные для таблицы
+      // Подготавливаем данные для таблицы
       const rowData = [
         new Date().toISOString(), // A: Дата регистрации
         req.body.user_id || 'Не указан', // B: user_id
@@ -40,32 +25,39 @@ export default async function handler(req, res) {
       
       console.log('📊 Данные для записи:', rowData);
       
-      // Авторизуемся и записываем данные
-      const client = await auth.getClient();
-      const sheets = google.sheets({ version: 'v4', auth: client });
+      // Используем Google Apps Script как прокси для записи в Sheets
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      const response = await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_NAME}!A:E`, // Только колонки A-E
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [rowData]
-        }
-      });
-      
-      console.log('✅ Данные записаны в Google Sheets!');
-      
-      res.status(200).json({
-        success: true,
-        message: '✅ Анкета успешно сохранена в базу данных!',
-        savedData: {
-          user_id: req.body.user_id,
-          username: req.body.username,
-          city: req.body.city,
-          children: req.body.children
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        timestamp: new Date().toISOString()
+        body: JSON.stringify({
+          action: 'save_user',
+          sheet_name: 'user_profiles',
+          data: rowData
+        })
       });
+      
+      const result = await response.json();
+      console.log('✅ Ответ от Google Apps Script:', result);
+      
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: '✅ Анкета успешно сохранена в базу данных!',
+          savedData: {
+            user_id: req.body.user_id,
+            username: req.body.username,
+            city: req.body.city,
+            children: req.body.children
+          },
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        throw new Error(result.error || 'Ошибка от Google Sheets');
+      }
       
     } catch (error) {
       console.error('❌ Ошибка сохранения:', error);
