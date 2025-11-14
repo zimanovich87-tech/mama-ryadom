@@ -26,27 +26,11 @@
         
         body.day-theme {
             color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         body.night-theme {
             color: white;
-        }
-        
-        .background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .background.day-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .background.night-bg {
             background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
         }
         
@@ -394,8 +378,6 @@
     </style>
 </head>
 <body class="day-theme">
-    <div class="background day-bg" id="background"></div>
-    
     <div class="container">
         <!-- Экран загрузки -->
         <div id="loadingScreen" class="screen active">
@@ -613,7 +595,7 @@
                     
                     // Проверяем совпадает ли user_id
                     if (currentUser.userId === user.id.toString()) {
-                        console.log('✅ User_id совпадает, показываем главный экран');
+                        console.log('✅ User_id совпадает, проверяем роль');
                         await checkUserRole();
                         showMainScreen();
                         return;
@@ -701,14 +683,11 @@
             isDayTime = hours >= 8 && hours < 20;
             
             const body = document.body;
-            const background = document.getElementById('background');
             
             if (isDayTime) {
                 body.className = 'day-theme';
-                background.className = 'background day-bg';
             } else {
                 body.className = 'night-theme';
-                background.className = 'background night-bg';
             }
             
             updateTimeGreeting();
@@ -721,17 +700,21 @@
             let greeting = '';
             
             if (hours >= 5 && hours < 12) {
-                greeting = 'Доброе утро!';
+                greeting = 'Доброе утро';
             } else if (hours >= 12 && hours < 18) {
-                greeting = 'Добрый день!';
+                greeting = 'Добрый день';
             } else if (hours >= 18 && hours < 23) {
-                greeting = 'Добрый вечер!';
+                greeting = 'Добрый вечер';
             } else {
-                greeting = 'Доброй ночи!';
+                greeting = 'Доброй ночи';
             }
             
             if (currentUser && currentUser.firstName) {
-                greeting += ` ${currentUser.firstName}`;
+                greeting += `, ${currentUser.firstName}!`;
+            } else if (currentUser && currentUser.username) {
+                greeting += `, ${currentUser.username}!`;
+            } else {
+                greeting += '!';
             }
             
             const greetingElement = document.getElementById('timeGreeting');
@@ -751,6 +734,7 @@
         // Показать главный экран
         function showMainScreen() {
             updateRoleButtons();
+            updateTimeGreeting();
             showScreen('mainScreen');
         }
 
@@ -984,7 +968,21 @@
             try {
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
                 
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=register_user&user_id=${user.id.toString()}&username=${user.username || `user_${user.id}`}&first_name=${user.first_name || ''}&last_name=${user.last_name || ''}&nickname=${nickname}&city=${city}&children=${children}`);
+                const formData = new FormData();
+                formData.append('action', 'register_user');
+                formData.append('user_id', user.id.toString());
+                formData.append('username', user.username || `user_${user.id}`);
+                formData.append('first_name', user.first_name || '');
+                formData.append('last_name', user.last_name || '');
+                formData.append('nickname', nickname);
+                formData.append('city', city);
+                formData.append('children', children);
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1004,7 +1002,7 @@
                     
                     showMainScreen();
                 } else {
-                    alert('Ошибка при регистрации');
+                    alert('Ошибка при регистрации: ' + (result.message || 'Неизвестная ошибка'));
                 }
             } catch (error) {
                 console.error('Ошибка регистрации:', error);
