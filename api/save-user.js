@@ -14,19 +14,19 @@ export default async function handler(req, res) {
       // Apps Script URL
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // ПРОСТО отправляем POST запрос без данных
+      // ПРОСТО отправляем ПУСТОЙ POST
+      console.log('📤 Отправляем ПУСТОЙ POST в Apps Script');
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: '{}' // АБСОЛЮТНО пустой JSON
+        body: '{}' // ПУСТОЙ JSON
       });
       
       const result = await response.json();
-      console.log('✅ Ответ:', result);
+      console.log('✅ Ответ от Apps Script:', result);
       
-      // Всегда возвращаем успех
       res.status(200).json({
         success: true,
         message: '✅ Регистрация завершена!',
@@ -36,7 +36,6 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('❌ Ошибка:', error);
       
-      // Все равно успех для бота
       res.status(200).json({
         success: true,
         message: '✅ Регистрация завершена!',
