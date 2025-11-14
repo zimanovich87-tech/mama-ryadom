@@ -14,9 +14,7 @@ export default async function handler(req, res) {
     try {
       console.log('=== 📥 ДАННЫЕ ОТ ТЕЛЕГРАММ БОТА ===');
       console.log(JSON.stringify(req.body, null, 2));
-      console.log('================================');
       
-      // Создаем URL с GET параметрами
       const baseUrl = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
       
       const params = new URLSearchParams({
@@ -31,9 +29,8 @@ export default async function handler(req, res) {
       
       const appsScriptUrl = `${baseUrl}?${params.toString()}`;
       
-      console.log('📤 Отправляем GET запрос:', appsScriptUrl);
+      console.log('📤 Отправляем GET запрос на Apps Script');
       
-      // Отправляем GET запрос
       const response = await fetch(appsScriptUrl);
       const result = await response.json();
       
