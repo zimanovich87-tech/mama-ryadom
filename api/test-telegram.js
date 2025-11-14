@@ -1,18 +1,21 @@
 export default async function handler(req, res) {
-  console.log('🧪 Тест с данными как от Telegram бота');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  console.log('🧪 Тест с Telegram данными');
   
   try {
-    // Данные как от реального Telegram бота
     const telegramData = {
-      username: 'maria_petrova',
-      city: 'Санкт-Петербург',
-      child: '1 год',
-      // Другие поля которые отправляет бот
+      username: 'test_user_123',
+      city: 'Москва',
+      child: '2 года',
+      interests: 'прогулки, игры',
+      helpType: 'ищу друзей',
+      about: 'Тестовый пользователь'
     };
     
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
     
-    console.log('📤 Отправляем Telegram-подобные данные:', telegramData);
+    console.log('📤 Отправляем данные:', telegramData);
     
     const response = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
