@@ -156,18 +156,40 @@
             z-index: 10;
         }
         
+        .standard-button.inactive {
+            background: rgba(200, 200, 200, 0.7);
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .standard-button.walk-active {
+            background: rgba(100, 100, 100, 0.7);
+            color: #333;
+        }
+        
         .night-theme .standard-button {
             background: rgba(255, 255, 255, 0.15);
             color: white;
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
         
-        .standard-button:active {
+        .night-theme .standard-button.inactive {
+            background: rgba(100, 100, 100, 0.3);
+            color: #999;
+        }
+        
+        .night-theme .standard-button.walk-active {
+            background: rgba(150, 150, 150, 0.3);
+            color: #ccc;
+        }
+        
+        .standard-button:active:not(.inactive) {
             transform: scale(0.98);
             background: rgba(255, 255, 255, 0.95);
         }
         
-        .night-theme .standard-button:active {
+        .night-theme .standard-button:active:not(.inactive) {
             background: rgba(255, 255, 255, 0.25);
         }
         
@@ -437,10 +459,10 @@
             <div class="buttons-container">
                 <!-- Основные кнопки навигации -->
                 <div class="main-buttons-grid">
-                    <button class="standard-button" onclick="showWalkSection()">
+                    <button id="walkButton" class="standard-button" onclick="showWalkSection()">
                         ИДЕМ ГУЛЯТЬ
                     </button>
-                    <button class="standard-button" onclick="showNannySection()">
+                    <button class="standard-button inactive">
                         НЯНЯ
                     </button>
                     <button class="standard-button" onclick="showSettings()">
@@ -576,34 +598,88 @@
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
+                if (!user || !user.id) {
+                    console.log('❌ Пользователь не авторизован');
+                    showScreen('registrationScreen');
+                    return;
+                }
+                
                 setBackgroundAndTheme();
                 
+                // Проверяем блокировку пользователя
                 const isBlocked = await checkUserBlocked();
                 if (isBlocked) {
                     showBlockScreen(isBlocked);
                     return;
                 }
                 
-                await checkUserRole();
+                // Проверяем существование пользователя в базе
+                const userExists = await checkUserExists(user.id.toString());
+                console.log('🔍 Пользователь существует в базе:', userExists);
                 
-                const savedUser = localStorage.getItem('mamaRyadomUser');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    console.log('✅ Пользователь восстановлен:', currentUser);
-                    showMainScreen();
-                } else {
+                if (!userExists) {
+                    // Пользователь не найден - показываем регистрацию
+                    console.log('📝 Пользователь не найден, показываем регистрацию');
                     showScreen('registrationScreen');
-                    if (user) {
+                    if (user.first_name) {
                         document.getElementById('regStatus').innerHTML = `
                             Привет, ${user.first_name}! 👋<br>
                             <small>Заполни профиль чтобы начать</small>
                         `;
                     }
+                } else {
+                    // Пользователь найден - проверяем роль и показываем главный экран
+                    console.log('✅ Пользователь найден, проверяем роль');
+                    await checkUserRole();
+                    
+                    // Восстанавливаем данные пользователя из localStorage или создаем временные
+                    const savedUser = localStorage.getItem('mamaRyadomUser');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
+                        console.log('✅ Пользователь восстановлен из localStorage:', currentUser);
+                    } else {
+                        // Создаем временные данные для входа
+                        currentUser = {
+                            userId: user.id,
+                            nickname: 'Пользователь',
+                            first_name: user.first_name || 'Мама',
+                            registered: true
+                        };
+                        console.log('✅ Созданы временные данные пользователя');
+                    }
+                    
+                    showMainScreen();
                 }
                 
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 showScreen('registrationScreen');
+            }
+        }
+
+        // Проверка существования пользователя
+        async function checkUserExists(userId) {
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    action: 'check_user_exists',
+                    user_id: userId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+                console.log('🔍 Проверка существования пользователя:', url);
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                console.log('📊 Результат проверки существования:', result);
+                return result.success && result.exists;
+                
+            } catch (error) {
+                console.error('Ошибка проверки существования:', error);
+                return false;
             }
         }
 
@@ -778,6 +854,7 @@
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
                     showStatus('✅ Регистрация успешна!', 'success');
                     
+                    // Автоматический вход после регистрации
                     setTimeout(() => {
                         showMainScreen();
                     }, 1000);
@@ -811,7 +888,7 @@
         function showMainScreen() {
             if (currentUser) {
                 const greeting = getTimeGreeting();
-                document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
+                document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname || currentUser.first_name}!`;
             }
             
             hideAllSections();
@@ -829,16 +906,23 @@
             document.getElementById('walkButtons').classList.add('hidden');
             document.getElementById('adminButtons').classList.add('hidden');
             document.getElementById('managerButtons').classList.add('hidden');
+            
+            // Сбрасываем стиль кнопки "Идем гулять"
+            const walkButton = document.getElementById('walkButton');
+            walkButton.classList.remove('walk-active');
             walkSectionVisible = false;
         }
 
         function showWalkSection() {
-            hideAllSections();
             if (!walkSectionVisible) {
+                hideAllSections();
                 document.getElementById('walkButtons').classList.remove('hidden');
+                // Затемняем кнопку "Идем гулять"
+                const walkButton = document.getElementById('walkButton');
+                walkButton.classList.add('walk-active');
                 walkSectionVisible = true;
             } else {
-                walkSectionVisible = false;
+                hideAllSections();
             }
         }
 
