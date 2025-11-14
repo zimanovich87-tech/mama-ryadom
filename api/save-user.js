@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       console.log('================================');
       
       // Создаем URL с GET параметрами
-      const baseUrl = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
+      const baseUrl = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
       
       const params = new URLSearchParams({
         action: 'save_user',
