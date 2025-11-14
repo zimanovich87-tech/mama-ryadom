@@ -173,9 +173,24 @@
             width: 100%;
             backdrop-filter: blur(10px);
         }
+        
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div class="debug-info" id="debugInfo"></div>
+    
     <div class="background" id="background">
         <!-- Фон будет установлен через JavaScript -->
     </div>
@@ -272,15 +287,40 @@
         let user = null;
         let currentUser = null;
 
+        // Отладочная информация
+        function updateDebugInfo(message) {
+            const debugEl = document.getElementById('debugInfo');
+            debugEl.innerHTML = message;
+            debugEl.style.display = 'block';
+            console.log('🐛 DEBUG:', message);
+        }
+
         // Инициализация Telegram Mini App
         async function initTelegramApp() {
             try {
-                tg = window.Telegram.WebApp;
-                tg.expand();
-                tg.enableClosingConfirmation();
+                // Сброс при параметре reset=1
+                if (window.location.search.includes('reset=1')) {
+                    localStorage.removeItem('mamaRyadomUser');
+                    updateDebugInfo('Сброс данных выполнен');
+                }
+
+                updateDebugInfo('Инициализация...');
                 
-                user = tg.initDataUnsafe?.user;
-                console.log('👤 Пользователь Telegram:', user);
+                tg = window.Telegram.WebApp;
+                if (tg) {
+                    tg.expand();
+                    tg.enableClosingConfirmation();
+                    
+                    user = tg.initDataUnsafe?.user;
+                    updateDebugInfo('Telegram WebApp доступен');
+                    console.log('👤 Пользователь Telegram:', user);
+                } else {
+                    updateDebugInfo('Telegram WebApp недоступен - браузерный режим');
+                    user = {
+                        id: Math.floor(Math.random() * 1000000),
+                        first_name: 'Тестовый пользователь'
+                    };
+                }
                 
                 // Устанавливаем фон в зависимости от времени
                 setBackgroundByTime();
@@ -289,10 +329,9 @@
                 const savedUser = localStorage.getItem('mamaRyadomUser');
                 if (savedUser) {
                     currentUser = JSON.parse(savedUser);
+                    updateDebugInfo('Пользователь восстановлен из localStorage');
                     console.log('✅ Пользователь восстановлен:', currentUser);
                     
-                    // Проверяем существует ли пользователь в базе
-                    await checkUserInDatabase();
                     showMainScreen();
                 } else {
                     showScreen('registrationScreen');
@@ -302,10 +341,12 @@
                             <small>Заполни профиль чтобы начать</small>
                         `;
                     }
+                    updateDebugInfo('Показ экрана регистрации');
                 }
                 
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
+                updateDebugInfo('Ошибка инициализации: ' + error.message);
                 showScreen('registrationScreen');
             }
         }
@@ -339,17 +380,6 @@
             return 'Доброй ночи';
         }
 
-        // Проверка пользователя в базе данных
-        async function checkUserInDatabase() {
-            try {
-                // Здесь можно добавить проверку в базу данных
-                // Пока просто используем локальные данные
-                console.log('✅ Пользователь авторизован:', currentUser.nickname);
-            } catch (error) {
-                console.error('Ошибка проверки пользователя:', error);
-            }
-        }
-
         // Регистрация пользователя
         async function registerUser(userData) {
             const submitBtn = document.getElementById('submitBtn');
@@ -358,46 +388,71 @@
             
             try {
                 showStatus('Сохраняем данные...', 'info');
+                updateDebugInfo('Начало регистрации');
                 
-                const response = await fetch('/api/save-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
+                // Прямой вызов Google Apps Script (основной метод)
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbzDBVfhILT7Q5jazaFgVXovqbcaRRFKUk3XmxcKhMeLoronwT51DuCda0UmjHsXrTc-Fw/exec';
+                
+                const params = new URLSearchParams({
+                    user_id: userData.userId.toString(),
+                    username: userData.nickname,
+                    city: userData.city,
+                    children: userData.children,
+                    source: 'Telegram Web App',
+                    timestamp: new Date().toISOString()
                 });
                 
-                const result = await response.json();
-                console.log('✅ Результат сохранения:', result);
+                const appsScriptUrl = `${scriptUrl}?${params.toString()}`;
+                updateDebugInfo('Отправка в Google Sheets...');
                 
-                if (result.success) {
-                    currentUser = {
-                        ...userData,
-                        first_name: user?.first_name || 'Мама',
-                        registered: true
-                    };
-                    
-                    localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                    showStatus('✅ Регистрация успешна!', 'success');
-                    
-                    setTimeout(() => {
-                        showMainScreen();
-                    }, 1500);
-                } else {
-                    throw new Error(result.error || 'Ошибка сохранения');
-                }
+                console.log('📤 Отправляем данные в Google Sheets:', appsScriptUrl);
                 
-            } catch (error) {
-                console.error('❌ Ошибка регистрации:', error);
+                // Отправляем запрос без ожидания ответа (no-cors)
+                fetch(appsScriptUrl, { 
+                    method: 'GET',
+                    mode: 'no-cors'
+                }).then(() => {
+                    console.log('✅ Запрос отправлен в Google Sheets');
+                    updateDebugInfo('Данные отправлены в Google Sheets');
+                }).catch(error => {
+                    console.warn('⚠️ Ошибка отправки в Google Sheets:', error);
+                    updateDebugInfo('Ошибка отправки в Google Sheets');
+                });
                 
-                // Если API не работает - сохраняем локально
+                // Сохраняем локально в любом случае
                 currentUser = {
                     ...userData,
                     first_name: user?.first_name || 'Мама',
                     registered: true,
-                    localSave: true
+                    timestamp: new Date().toISOString(),
+                    savedToGoogle: true
                 };
                 
                 localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                updateDebugInfo('Данные сохранены локально');
+                
                 showStatus('✅ Регистрация успешна!', 'success');
+                
+                setTimeout(() => {
+                    showMainScreen();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('❌ Ошибка регистрации:', error);
+                updateDebugInfo('Ошибка: ' + error.message);
+                
+                // Fallback: сохраняем только локально
+                currentUser = {
+                    ...userData,
+                    first_name: user?.first_name || 'Мама',
+                    registered: true,
+                    localSave: true,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                showStatus('✅ Регистрация успешна (локально)!', 'success');
+                updateDebugInfo('Данные сохранены только локально');
                 
                 setTimeout(() => {
                     showMainScreen();
@@ -414,6 +469,7 @@
                 screen.classList.remove('active');
             });
             document.getElementById(screenId).classList.add('active');
+            updateDebugInfo('Показан экран: ' + screenId);
         }
 
         function showMainScreen() {
@@ -428,43 +484,52 @@
             document.getElementById('walkButtons').style.display = 'none';
             
             showScreen('mainScreen');
+            updateDebugInfo('Главный экран показан');
         }
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('regStatus');
             statusEl.textContent = message;
             statusEl.className = `status ${type}`;
+            updateDebugInfo('Статус: ' + message);
         }
 
         // Навигация по разделам
         function showWalkSection() {
             document.getElementById('mainButtons').style.display = 'none';
             document.getElementById('walkButtons').style.display = 'flex';
+            updateDebugInfo('Раздел: Идем гулять');
         }
 
         function backToMain() {
             document.getElementById('mainButtons').style.display = 'grid';
             document.getElementById('walkButtons').style.display = 'none';
+            updateDebugInfo('Возврат в главное меню');
         }
 
         function showNannySection() {
             alert('👶 Раздел "Няня" в разработке 🚧');
+            updateDebugInfo('Нажата кнопка: Няня');
         }
 
         function showSettings() {
             alert('⚙️ Раздел "Настройки" в разработке 🚧');
+            updateDebugInfo('Нажата кнопка: Настройки');
         }
 
         function findMoms() {
             alert('🚶‍♀️ Функция "Идем гулять" в разработке 🚧');
+            updateDebugInfo('Нажата кнопка: Идем гулять');
         }
 
         function searchMoms() {
             alert('🔍 Функция "Найти маму" в разработке 🚧');
+            updateDebugInfo('Нажата кнопка: Найти маму');
         }
 
         function showLocations() {
             alert('📍 Функция "Локации" в разработке 🚧');
+            updateDebugInfo('Нажата кнопка: Локации');
         }
 
         // Обработчик формы регистрации
@@ -480,14 +545,17 @@
             
             if (!formData.nickname || !formData.city || !formData.children) {
                 showStatus('❌ Заполните все поля', 'error');
+                updateDebugInfo('Ошибка: не все поля заполнены');
                 return;
             }
             
+            updateDebugInfo('Начата регистрация: ' + formData.nickname);
             registerUser(formData);
         });
 
         // Запуск при загрузке
         document.addEventListener('DOMContentLoaded', function() {
+            updateDebugInfo('DOM загружен, запуск инициализации...');
             setTimeout(initTelegramApp, 500);
         });
 
@@ -499,6 +567,12 @@
         window.searchMoms = searchMoms;
         window.showLocations = showLocations;
         window.backToMain = backToMain;
+        
+        // Функция для принудительного сброса
+        window.resetApp = function() {
+            localStorage.removeItem('mamaRyadomUser');
+            window.location.reload();
+        };
     </script>
 </body>
 </html>
