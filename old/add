@@ -1,0 +1,89 @@
+function doGet(e) {
+  console.log('🎯 doGet ВЫЗВАН В НОВОМ СКРИПТЕ');
+  
+  try {
+    // Логируем все что пришло
+    console.log('📥 Полный объект e:', JSON.stringify(e));
+    
+    if (!e || !e.parameter) {
+      console.log('❌ Нет параметров e или e.parameter');
+      return createResponse(false, 'No parameters received: ' + JSON.stringify(e));
+    }
+    
+    const params = e.parameter;
+    console.log('📊 Параметры запроса:', params);
+    
+    // Сохраняем в таблицу
+    const rowData = [
+      new Date().toISOString(),
+      params.user_id || 'Не указан',
+      params.username || 'Не указан',
+      params.city || 'Не указан',
+      params.children || 'Не указан',
+      params.source || 'GET Request'
+    ];
+    
+    console.log('💾 Сохраняем данные:', rowData);
+    
+    const SPREADSHEET_ID = '1zCboXVlUWnfhYiv7qQUbz-gHxuCkQ-dGO8551f8crC0';
+    const SHEET_NAME = 'user_profiles';
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
+    
+    sheet.appendRow(rowData);
+    const rowNumber = sheet.getLastRow();
+    
+    console.log('✅ ДАННЫЕ СОХРАНЕНЫ в строку:', rowNumber);
+    
+    return createResponse(true, 'Данные пользователя ' + params.username + ' сохранены в строку ' + rowNumber, {
+      row: rowNumber,
+      user: params.username
+    });
+    
+  } catch (error) {
+    console.error('❌ Ошибка:', error);
+    return createResponse(false, error.toString());
+  }
+}
+
+function doPost(e) {
+  console.log('⚠️ doPost вызван - перенаправляем в doGet');
+  return doGet(e);
+}
+
+function createResponse(success, message, additionalData = {}) {
+  const response = {
+    success: success,
+    message: message,
+    timestamp: new Date().toISOString(),
+    ...additionalData
+  };
+  
+  console.log('📤 Отправляем ответ:', response);
+  
+  return ContentService
+    .createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ТЕСТ - ВЫПОЛНИ ЭТУ ФУНКЦИЮ!
+function testNewScript() {
+  console.log('🧪 Тестируем новый скрипт...');
+  
+  const mockEvent = {
+    parameter: {
+      user_id: 'test_new_script',
+      username: 'тест_новый_скрипт',
+      city: 'Тестовый город',
+      children: '1 ребенок',
+      source: 'Test'
+    }
+  };
+  
+  const result = doGet(mockEvent);
+  const content = result.getContent();
+  console.log('Результат:', content);
+  
+  return 'Тест нового скрипта завершен!';
+}
