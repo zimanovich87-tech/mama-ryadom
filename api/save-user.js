@@ -16,23 +16,22 @@ export default async function handler(req, res) {
       
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // Отправляем запрос в Apps Script
+      // Просто отправляем пустой POST
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}) // Пустой объект
+        body: JSON.stringify({}) // ПУСТОЙ объект
       });
       
       const result = await response.json();
-      console.log('✅ Ответ от Google Sheets:', result);
+      console.log('✅ Ответ от Apps Script:', result);
       
       res.status(200).json({
         success: true,
-        message: '✅ Регистрация успешно завершена! Данные сохранены.',
-        bot_data: req.body,
-        sheets_response: result,
+        message: '✅ Регистрация успешно завершена!',
+        sheets_result: result,
         timestamp: new Date().toISOString()
       });
       
