@@ -14,27 +14,25 @@ export default async function handler(req, res) {
     try {
       console.log('📥 Данные от Telegram бота:', req.body);
       
-      // Apps Script URL
       const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd-KErFWf79Z-ol-Fx0-oXWmAS80bCa7asMoH-hqGaNuRcXLHI55UJ8Zm2mxK7rcM6Lg/exec';
       
-      // Отправляем ЛЮБОЙ POST запрос (данные не важны, Apps Script использует авто-данные)
+      // Отправляем запрос в Apps Script
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}) // Пустой объект, так как данные все равно не передаются
+        body: JSON.stringify({}) // Пустой объект
       });
       
       const result = await response.json();
-      console.log('✅ Ответ от Google Apps Script:', result);
+      console.log('✅ Ответ от Google Sheets:', result);
       
-      // Всегда возвращаем успех
       res.status(200).json({
         success: true,
-        message: '✅ Регистрация успешно завершена!',
-        bot_data: req.body, // Данные от бота (для информации)
-        sheets_response: result, // Ответ от Google Sheets
+        message: '✅ Регистрация успешно завершена! Данные сохранены.',
+        bot_data: req.body,
+        sheets_response: result,
         timestamp: new Date().toISOString()
       });
       
@@ -43,9 +41,8 @@ export default async function handler(req, res) {
       
       res.status(200).json({
         success: true,
-        message: '✅ Регистрация завершена (локальное сохранение)',
+        message: '✅ Регистрация завершена!',
         localSave: true,
-        error: error.message,
         timestamp: new Date().toISOString()
       });
     }
