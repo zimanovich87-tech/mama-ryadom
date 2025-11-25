@@ -68,8 +68,15 @@
             padding: 0 10px;
         }
 
-        .greeting.day { color: black; text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white; }
-        .greeting.night { color: white; text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7); }
+        .greeting.day {
+            color: black;
+            text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
+        }
+
+        .greeting.night {
+            color: white;
+            text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7);
+        }
 
         .subtitle {
             font-size: 16px;
@@ -78,8 +85,15 @@
             padding: 0 10px;
         }
 
-        .subtitle.day { color: black; text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white; }
-        .subtitle.night { color: white; text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7); }
+        .subtitle.day {
+            color: black;
+            text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
+        }
+
+        .subtitle.night {
+            color: white;
+            text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7);
+        }
         
         .main-actions {
             margin-top: auto;
@@ -124,25 +138,6 @@
             color: white;
         }
 
-        .card {
-            background: rgba(255,255,255,0.95);
-            color: #333;
-            padding: 25px;
-            border-radius: 15px;
-            margin: 15px 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        
         .status {
             background: rgba(255,255,255,0.1);
             padding: 15px;
@@ -170,9 +165,8 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Admin screen */
         #adminScreen {
-            background: #f5f5f5;
+            background: #f0f0f0;
             color: #333;
             display: none;
             flex-direction: column;
@@ -191,8 +185,11 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            font-size: 18px;
+            font-size: 24px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -260,8 +257,8 @@
         <!-- Admin Screen -->
         <div id="adminScreen" class="screen">
             <button class="close-btn" onclick="backFromAdmin()">×</button>
-            <h2 id="adminTitle">Админка</h2>
-            <p>Здесь будет меню администратора.</p>
+            <h2 id="adminTitle" style="margin-bottom: 20px;">Админка</h2>
+            <p>Меню в разработке.</p>
         </div>
     </div>
 
@@ -270,14 +267,14 @@
         let user = null;
         let currentUser = null;
 
-        // Очистка кэша при уходе
+        // Очистка localStorage при закрытии
         const clearCache = () => {
             localStorage.removeItem('mamaRyadomUser');
         };
         window.addEventListener('beforeunload', clearCache);
         window.addEventListener('pagehide', clearCache);
 
-        // Проверка существования пользователя через Vercel API
+        // Проверка пользователя в Google Таблице
         async function checkUserInSheet(userId) {
             try {
                 const res = await fetch('/api/check-user', {
@@ -286,7 +283,7 @@
                     body: JSON.stringify({ userId })
                 });
                 const data = await res.json();
-                return data.found ? data.profile : null;
+                return data.success ? data : null;
             } catch (e) {
                 console.error('Ошибка проверки пользователя:', e);
                 return null;
@@ -306,13 +303,18 @@
                 }
 
                 setBackgroundByTime();
-
-                // Проверяем в таблице
                 showScreen('loadingScreen');
-                const profile = await checkUserInSheet(user.id);
 
-                if (profile) {
-                    currentUser = profile;
+                // Проверяем, есть ли пользователь в таблице
+                const result = await checkUserInSheet(user.id);
+                if (result && result.userId) {
+                    currentUser = {
+                        userId: result.userId,
+                        nickname: result.nickname,
+                        city: result.city,
+                        children: result.children,
+                        role: result.role || 'user'
+                    };
                     showMainScreen();
                 } else {
                     showScreen('registrationScreen');
@@ -356,8 +358,8 @@
                     userId: user.id,
                     nickname: formData.nickname,
                     city: formData.city,
-                    children: formData.children,
-                    role: 'user' // ← стандартная роль
+                    children: formData.children
+                    // роль 'user' будет добавлена на бэкенде
                 };
 
                 const res = await fetch('/api/save-user', {
@@ -367,22 +369,18 @@
                 });
 
                 const result = await res.json();
-                if (result.success) {
-                    currentUser = payload;
-                    localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
+                if (result.success && result.profile) {
+                    currentUser = result.profile;
                     showStatus('✅ Успешно!', 'success');
                     setTimeout(() => showMainScreen(), 1500);
-                } else throw new Error('Ошибка');
+                } else {
+                    throw new Error('Не удалось загрузить профиль после регистрации');
+                }
             } catch (e) {
-                console.error(e);
-                // fallback local
-                currentUser = { ...formData, userId: user.id, role: 'user' };
-                localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                showStatus('✅ Локально сохранено', 'success');
-                setTimeout(() => showMainScreen(), 1500);
-            } finally {
+                console.error('Ошибка регистрации:', e);
+                showStatus('❌ Ошибка. Попробуйте позже.', 'error');
                 submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 Начать';
+                submitBtn.textContent = '🚀 Начать пользоваться';
             }
         }
 
@@ -391,28 +389,31 @@
             updateTextStyle(isDay);
 
             if (currentUser) {
-                const greeting = ['Доброе утро', 'Добрый день', 'Добрый вечер', 'Доброй ночи'][
-                    new Date().getHours() < 12 ? 0 : new Date().getHours() < 18 ? 1 : new Date().getHours() < 22 ? 2 : 3
-                ];
+                const hour = new Date().getHours();
+                let greeting = 'Доброй ночи';
+                if (hour >= 6 && hour < 12) greeting = 'Доброе утро';
+                else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
+                else if (hour >= 18 && hour < 22) greeting = 'Добрый вечер';
+                
                 document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
                 document.getElementById('welcomeMessage').textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
 
-            // Показываем админ-кнопку, если нужно
-            const adminContainer = document.getElementById('adminButtonContainer');
-            adminContainer.innerHTML = '';
+            // Админ-кнопка
+            const container = document.getElementById('adminButtonContainer');
+            container.innerHTML = '';
             if (currentUser.role === 'admin') {
                 const btn = document.createElement('button');
                 btn.className = 'glass-button admin-button';
                 btn.textContent = `Администратор ${currentUser.nickname}`;
                 btn.onclick = () => showAdminScreen('Админка');
-                adminContainer.appendChild(btn);
+                container.appendChild(btn);
             } else if (currentUser.role === 'upadmin') {
                 const btn = document.createElement('button');
                 btn.className = 'glass-button owner-button';
                 btn.textContent = `Владелец ${currentUser.nickname}`;
                 btn.onclick = () => showAdminScreen('Владелец');
-                adminContainer.appendChild(btn);
+                container.appendChild(btn);
             }
 
             showScreen('mainScreen');
@@ -442,13 +443,13 @@
         function showWalkSection() {
             document.getElementById('walkButtons').style.display = 'grid';
         }
-        function showNannySection() { alert('👶 В разработке'); }
-        function showSettings() { alert('⚙️ В разработке'); }
-        function findMoms() { alert('🚶‍♀️ В разработке'); }
-        function searchMoms() { alert('🔍 В разработке'); }
-        function showLocations() { alert('📍 В разработке'); }
+        function showNannySection() { alert('👶 Раздел в разработке'); }
+        function showSettings() { alert('⚙️ Раздел в разработке'); }
+        function findMoms() { alert('🚶‍♀️ Раздел в разработке'); }
+        function searchMoms() { alert('🔍 Раздел в разработке'); }
+        function showLocations() { alert('📍 Раздел в разработке'); }
 
-        // Forms
+        // Form
         document.getElementById('registrationForm')?.addEventListener('submit', e => {
             e.preventDefault();
             const fd = {
