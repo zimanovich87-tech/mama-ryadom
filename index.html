@@ -85,13 +85,6 @@
             gap: 10px;
         }
 
-        .button-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 12px;
-        }
-
         .glass-button {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
@@ -225,7 +218,8 @@
                     <button class="glass-button" onclick="showSettings()">Настройки</button>
                 </div>
 
-                <div class="button-stack" id="walkButtons" style="display: none;">
+                <!-- Дополнительные кнопки — теперь в одну строку -->
+                <div class="button-grid" id="walkButtons" style="display: none; margin-top: 12px;">
                     <button class="glass-button" onclick="findMoms()">Идем гулять</button>
                     <button class="glass-button" onclick="searchMoms()">Найти маму</button>
                     <button class="glass-button" onclick="showLocations()">Локации</button>
@@ -370,7 +364,7 @@
 
         // Навигация
         function showWalkSection() {
-            document.getElementById('walkButtons').style.display = 'flex';
+            document.getElementById('walkButtons').style.display = 'grid';
         }
 
         function showNannySection() {
