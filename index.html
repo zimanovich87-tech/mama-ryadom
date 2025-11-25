@@ -16,7 +16,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            /* Убрано глобальное color: white */
             height: 100vh;
             overflow: hidden;
             position: relative;
@@ -65,10 +64,28 @@
             font-size: 24px;
             font-weight: 600;
             margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            color: white;
+            text-align: center;
+            padding: 0 10px;
         }
-        
+
+        .greeting.day {
+            color: black;
+            text-shadow:
+                -1px -1px 0 white,
+                1px -1px 0 white,
+                -1px 1px 0 white,
+                1px 1px 0 white;
+        }
+
+        .greeting.night {
+            color: white;
+            text-shadow:
+                -1px -1px 0 rgba(0, 0, 0, 0.7),
+                1px -1px 0 rgba(0, 0, 0, 0.7),
+                -1px 1px 0 rgba(0, 0, 0, 0.7),
+                1px 1px 0 rgba(0, 0, 0, 0.7);
+        }
+
         .subtitle {
             font-size: 16px;
             font-weight: 600;
@@ -186,7 +203,7 @@
         <!-- Экран загрузки -->
         <div id="loadingScreen" class="screen active">
             <div class="header">
-                <div class="greeting">👋 Мама Рядом</div>
+                <div class="greeting night">👋 Мама Рядом</div>
                 <div class="subtitle night">Загрузка...</div>
             </div>
         </div>
@@ -194,7 +211,7 @@
         <!-- Экран регистрации -->
         <div id="registrationScreen" class="screen">
             <div class="header">
-                <div class="greeting">📝 Регистрация</div>
+                <div class="greeting night">📝 Регистрация</div>
                 <div class="subtitle night">Создайте ваш профиль для участия в сообществе</div>
             </div>
             
@@ -252,30 +269,41 @@
         let user = null;
         let currentUser = null;
 
+        // Очистка кэша при закрытии/уходе
+        function clearCacheOnExit() {
+            console.log('🧹 Очистка кэша при закрытии приложения');
+            localStorage.removeItem('mamaRyadomUser');
+            // Можно добавить другие очистки при необходимости
+        }
+
+        // Регистрация обработчиков завершения
+        window.addEventListener('beforeunload', clearCacheOnExit);
+        window.addEventListener('pagehide', clearCacheOnExit); // для iOS Safari и фоновых вкладок
+
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
                 tg.expand();
                 tg.enableClosingConfirmation();
-                
+
+                // Отключаем подтверждение закрытия — чтобы очистка работала автоматически
+                // Если нужно подтверждение — убери эту строку
+                tg.disableClosingConfirmation();
+
                 user = tg.initDataUnsafe?.user;
                 console.log('👤 Пользователь Telegram:', user);
                 
                 setBackgroundByTime();
                 
-                const savedUser = localStorage.getItem('mamaRyadomUser');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    console.log('✅ Пользователь восстановлен:', currentUser);
-                    showMainScreen();
-                } else {
-                    showScreen('registrationScreen');
-                    if (user) {
-                        document.getElementById('regStatus').innerHTML = `
-                            Привет, ${user.first_name}! 👋<br>
-                            <small>Заполни профиль чтобы начать</small>
-                        `;
-                    }
+                // При старте НЕ восстанавливаем пользователя — т.к. кэш очищается при выходе
+                // Но если хочешь сохранять сессию до закрытия — можно оставить проверку
+                // Сейчас: каждый запуск = чистый старт, как просил
+                showScreen('registrationScreen');
+                if (user) {
+                    document.getElementById('regStatus').innerHTML = `
+                        Привет, ${user.first_name}! 👋<br>
+                        <small>Заполни профиль чтобы начать</small>
+                    `;
                 }
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
@@ -286,6 +314,7 @@
         function setBackgroundByTime() {
             const background = document.getElementById('background');
             const welcomeMessageEl = document.getElementById('welcomeMessage');
+            const timeGreetingEl = document.getElementById('timeGreeting');
             const now = new Date();
             const hour = now.getHours();
             const isDay = hour >= 6 && hour < 22;
@@ -294,9 +323,11 @@
             if (isDay) {
                 backgroundUrl = 'https://i.postimg.cc/BZ5RKvBr/1762526374.png';
                 welcomeMessageEl.className = 'subtitle day';
+                timeGreetingEl.className = 'greeting day';
             } else {
                 backgroundUrl = 'https://i.postimg.cc/7Z5BmPSy/1762867571.png';
                 welcomeMessageEl.className = 'subtitle night';
+                timeGreetingEl.className = 'greeting night';
             }
             
             background.innerHTML = `<img src="${backgroundUrl}" alt="Background">`;
@@ -335,6 +366,7 @@
                         registered: true
                     };
                     
+                    // Сохраняем в localStorage — но при следующем запуске он будет удалён
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
                     showStatus('✅ Регистрация успешна!', 'success');
                     
@@ -376,11 +408,14 @@
             const isDay = hour >= 6 && hour < 22;
 
             const welcomeMessageEl = document.getElementById('welcomeMessage');
+            const timeGreetingEl = document.getElementById('timeGreeting');
+
             welcomeMessageEl.className = 'subtitle ' + (isDay ? 'day' : 'night');
+            timeGreetingEl.className = 'greeting ' + (isDay ? 'day' : 'night');
 
             if (currentUser) {
                 const greeting = getTimeGreeting();
-                document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
+                timeGreetingEl.textContent = `${greeting}, ${currentUser.nickname}!`;
                 welcomeMessageEl.textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
             showScreen('mainScreen');
@@ -392,7 +427,6 @@
             statusEl.className = `status ${type}`;
         }
 
-        // Навигация
         function showWalkSection() {
             document.getElementById('walkButtons').style.display = 'grid';
         }
