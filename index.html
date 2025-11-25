@@ -16,7 +16,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            color: white;
+            /* Убрано глобальное color: white */
             height: 100vh;
             overflow: hidden;
             position: relative;
@@ -66,12 +66,32 @@
             font-weight: 600;
             margin-bottom: 8px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            color: white;
         }
         
         .subtitle {
             font-size: 16px;
-            opacity: 0.9;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-weight: 600;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .subtitle.day {
+            color: black;
+            text-shadow:
+                -1px -1px 0 white,
+                1px -1px 0 white,
+                -1px 1px 0 white,
+                1px 1px 0 white;
+        }
+
+        .subtitle.night {
+            color: white;
+            text-shadow:
+                -1px -1px 0 rgba(0, 0, 0, 0.7),
+                1px -1px 0 rgba(0, 0, 0, 0.7),
+                -1px 1px 0 rgba(0, 0, 0, 0.7),
+                1px 1px 0 rgba(0, 0, 0, 0.7);
         }
         
         .main-actions {
@@ -167,7 +187,7 @@
         <div id="loadingScreen" class="screen active">
             <div class="header">
                 <div class="greeting">👋 Мама Рядом</div>
-                <div class="subtitle">Загрузка...</div>
+                <div class="subtitle night">Загрузка...</div>
             </div>
         </div>
 
@@ -175,7 +195,7 @@
         <div id="registrationScreen" class="screen">
             <div class="header">
                 <div class="greeting">📝 Регистрация</div>
-                <div class="subtitle">Создайте ваш профиль для участия в сообществе</div>
+                <div class="subtitle night">Создайте ваш профиль для участия в сообществе</div>
             </div>
             
             <div id="regStatus" class="status info">Заполните информацию</div>
@@ -218,7 +238,6 @@
                     <button class="glass-button" onclick="showSettings()">Настройки</button>
                 </div>
 
-                <!-- Дополнительные кнопки — теперь в одну строку -->
                 <div class="button-grid" id="walkButtons" style="display: none; margin-top: 12px;">
                     <button class="glass-button" onclick="findMoms()">Идем гулять</button>
                     <button class="glass-button" onclick="searchMoms()">Найти маму</button>
@@ -266,14 +285,18 @@
 
         function setBackgroundByTime() {
             const background = document.getElementById('background');
+            const welcomeMessageEl = document.getElementById('welcomeMessage');
             const now = new Date();
             const hour = now.getHours();
-            
+            const isDay = hour >= 6 && hour < 22;
+
             let backgroundUrl;
-            if (hour >= 6 && hour < 22) {
+            if (isDay) {
                 backgroundUrl = 'https://i.postimg.cc/BZ5RKvBr/1762526374.png';
+                welcomeMessageEl.className = 'subtitle day';
             } else {
                 backgroundUrl = 'https://i.postimg.cc/7Z5BmPSy/1762867571.png';
+                welcomeMessageEl.className = 'subtitle night';
             }
             
             background.innerHTML = `<img src="${backgroundUrl}" alt="Background">`;
@@ -348,10 +371,17 @@
         }
 
         function showMainScreen() {
+            const now = new Date();
+            const hour = now.getHours();
+            const isDay = hour >= 6 && hour < 22;
+
+            const welcomeMessageEl = document.getElementById('welcomeMessage');
+            welcomeMessageEl.className = 'subtitle ' + (isDay ? 'day' : 'night');
+
             if (currentUser) {
                 const greeting = getTimeGreeting();
                 document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
-                document.getElementById('welcomeMessage').textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
+                welcomeMessageEl.textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
             showScreen('mainScreen');
         }
