@@ -197,7 +197,6 @@
     <div class="background" id="background"></div>
     
     <div class="container">
-        <!-- Loading -->
         <div id="loadingScreen" class="screen active">
             <div class="header">
                 <div class="greeting night">👋 Мама Рядом</div>
@@ -205,7 +204,6 @@
             </div>
         </div>
 
-        <!-- Registration -->
         <div id="registrationScreen" class="screen">
             <div class="header">
                 <div class="greeting night">📝 Регистрация</div>
@@ -233,7 +231,6 @@
             </form>
         </div>
 
-        <!-- Main -->
         <div id="mainScreen" class="screen">
             <div class="header">
                 <div class="greeting" id="timeGreeting">Добро пожаловать!</div>
@@ -254,7 +251,6 @@
             </div>
         </div>
 
-        <!-- Admin Screen -->
         <div id="adminScreen" class="screen">
             <button class="close-btn" onclick="backFromAdmin()">×</button>
             <h2 id="adminTitle" style="margin-bottom: 20px;">Админка</h2>
@@ -267,25 +263,25 @@
         let user = null;
         let currentUser = null;
 
-        // Очистка localStorage при закрытии
+        // Очистка при закрытии
         const clearCache = () => {
             localStorage.removeItem('mamaRyadomUser');
         };
         window.addEventListener('beforeunload', clearCache);
         window.addEventListener('pagehide', clearCache);
 
-        // Проверка пользователя в Google Таблице
+        // Проверка в таблице
         async function checkUserInSheet(userId) {
             try {
                 const res = await fetch('/api/check-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
+                    body: JSON.stringify({ userId: String(userId) }) // ← всегда строка
                 });
                 const data = await res.json();
                 return data.success ? data : null;
             } catch (e) {
-                console.error('Ошибка проверки пользователя:', e);
+                console.error('❌ Ошибка проверки:', e);
                 return null;
             }
         }
@@ -305,9 +301,9 @@
                 setBackgroundByTime();
                 showScreen('loadingScreen');
 
-                // Проверяем, есть ли пользователь в таблице
-                const result = await checkUserInSheet(user.id);
-                if (result && result.userId) {
+                // Проверяем пользователя — передаём как строку!
+                const result = await checkUserInSheet(String(user.id));
+                if (result) {
                     currentUser = {
                         userId: result.userId,
                         nickname: result.nickname,
@@ -355,11 +351,10 @@
             try {
                 showStatus('Сохраняем...', 'info');
                 const payload = {
-                    userId: user.id,
+                    userId: String(user.id), // ← всегда строка
                     nickname: formData.nickname,
                     city: formData.city,
                     children: formData.children
-                    // роль 'user' будет добавлена на бэкенде
                 };
 
                 const res = await fetch('/api/save-user', {
@@ -374,7 +369,7 @@
                     showStatus('✅ Успешно!', 'success');
                     setTimeout(() => showMainScreen(), 1500);
                 } else {
-                    throw new Error('Не удалось загрузить профиль после регистрации');
+                    throw new Error('Ошибка сохранения');
                 }
             } catch (e) {
                 console.error('Ошибка регистрации:', e);
@@ -389,17 +384,15 @@
             updateTextStyle(isDay);
 
             if (currentUser) {
-                const hour = new Date().getHours();
                 let greeting = 'Доброй ночи';
-                if (hour >= 6 && hour < 12) greeting = 'Доброе утро';
-                else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
-                else if (hour >= 18 && hour < 22) greeting = 'Добрый вечер';
-                
+                const h = new Date().getHours();
+                if (h >= 6 && h < 12) greeting = 'Доброе утро';
+                else if (h >= 12 && h < 18) greeting = 'Добрый день';
+                else if (h >= 18 && h < 22) greeting = 'Добрый вечер';
                 document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
                 document.getElementById('welcomeMessage').textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
 
-            // Админ-кнопка
             const container = document.getElementById('adminButtonContainer');
             container.innerHTML = '';
             if (currentUser.role === 'admin') {
@@ -439,17 +432,15 @@
             el.className = `status ${type}`;
         }
 
-        // Navigation
         function showWalkSection() {
             document.getElementById('walkButtons').style.display = 'grid';
         }
-        function showNannySection() { alert('👶 Раздел в разработке'); }
-        function showSettings() { alert('⚙️ Раздел в разработке'); }
-        function findMoms() { alert('🚶‍♀️ Раздел в разработке'); }
-        function searchMoms() { alert('🔍 Раздел в разработке'); }
-        function showLocations() { alert('📍 Раздел в разработке'); }
+        function showNannySection() { alert('👶 В разработке'); }
+        function showSettings() { alert('⚙️ В разработке'); }
+        function findMoms() { alert('🚶‍♀️ В разработке'); }
+        function searchMoms() { alert('🔍 В разработке'); }
+        function showLocations() { alert('📍 В разработке'); }
 
-        // Form
         document.getElementById('registrationForm')?.addEventListener('submit', e => {
             e.preventDefault();
             const fd = {
