@@ -68,23 +68,8 @@
             padding: 0 10px;
         }
 
-        .greeting.day {
-            color: black;
-            text-shadow:
-                -1px -1px 0 white,
-                1px -1px 0 white,
-                -1px 1px 0 white,
-                1px 1px 0 white;
-        }
-
-        .greeting.night {
-            color: white;
-            text-shadow:
-                -1px -1px 0 rgba(0, 0, 0, 0.7),
-                1px -1px 0 rgba(0, 0, 0, 0.7),
-                -1px 1px 0 rgba(0, 0, 0, 0.7),
-                1px 1px 0 rgba(0, 0, 0, 0.7);
-        }
+        .greeting.day { color: black; text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white; }
+        .greeting.night { color: white; text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7); }
 
         .subtitle {
             font-size: 16px;
@@ -93,23 +78,8 @@
             padding: 0 10px;
         }
 
-        .subtitle.day {
-            color: black;
-            text-shadow:
-                -1px -1px 0 white,
-                1px -1px 0 white,
-                -1px 1px 0 white,
-                1px 1px 0 white;
-        }
-
-        .subtitle.night {
-            color: white;
-            text-shadow:
-                -1px -1px 0 rgba(0, 0, 0, 0.7),
-                1px -1px 0 rgba(0, 0, 0, 0.7),
-                -1px 1px 0 rgba(0, 0, 0, 0.7),
-                1px 1px 0 rgba(0, 0, 0, 0.7);
-        }
+        .subtitle.day { color: black; text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white; }
+        .subtitle.night { color: white; text-shadow: -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7); }
         
         .main-actions {
             margin-top: auto;
@@ -143,10 +113,17 @@
             transform: translateY(-1px);
         }
 
-        .glass-button:active {
-            transform: translateY(0);
+        .admin-button {
+            background: rgba(255, 235, 59, 0.9);
+            color: black;
+            margin-top: 12px;
         }
-        
+
+        .owner-button {
+            background: rgba(239, 83, 80, 0.9);
+            color: white;
+        }
+
         .card {
             background: rgba(255,255,255,0.95);
             color: #333;
@@ -192,15 +169,38 @@
             width: 100%;
             backdrop-filter: blur(10px);
         }
+
+        /* Admin screen */
+        #adminScreen {
+            background: #f5f5f5;
+            color: #333;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 60px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ccc;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="background" id="background">
-        <!-- Фон будет установлен через JavaScript -->
-    </div>
+    <div class="background" id="background"></div>
     
     <div class="container">
-        <!-- Экран загрузки -->
+        <!-- Loading -->
         <div id="loadingScreen" class="screen active">
             <div class="header">
                 <div class="greeting night">👋 Мама Рядом</div>
@@ -208,15 +208,13 @@
             </div>
         </div>
 
-        <!-- Экран регистрации -->
+        <!-- Registration -->
         <div id="registrationScreen" class="screen">
             <div class="header">
                 <div class="greeting night">📝 Регистрация</div>
-                <div class="subtitle night">Создайте ваш профиль для участия в сообществе</div>
+                <div class="subtitle night">Создайте ваш профиль</div>
             </div>
-            
             <div id="regStatus" class="status info">Заполните информацию</div>
-            
             <form id="registrationForm">
                 <input type="text" id="nickname" placeholder="Придумайте никнейм" required>
                 <select id="city" required>
@@ -234,33 +232,36 @@
                     <option value="3+ детей">3+ детей</option>
                     <option value="пока нет">Пока нет детей</option>
                 </select>
-                
-                <button type="submit" class="btn" id="submitBtn">
-                    🚀 Начать пользоваться
-                </button>
+                <button type="submit" class="btn" id="submitBtn">🚀 Начать пользоваться</button>
             </form>
         </div>
 
-        <!-- Главный экран -->
+        <!-- Main -->
         <div id="mainScreen" class="screen">
             <div class="header">
                 <div class="greeting" id="timeGreeting">Добро пожаловать!</div>
-                <div class="subtitle" id="welcomeMessage">Как хорошо, что вы зашли, чтобы найти компанию для прогулки</div>
+                <div class="subtitle" id="welcomeMessage">Как хорошо, что вы зашли...</div>
             </div>
-
             <div class="main-actions">
                 <div class="button-grid" id="mainButtons">
                     <button class="glass-button" onclick="showWalkSection()">Идем гулять</button>
                     <button class="glass-button" onclick="showNannySection()">Няня</button>
                     <button class="glass-button" onclick="showSettings()">Настройки</button>
                 </div>
-
                 <div class="button-grid" id="walkButtons" style="display: none; margin-top: 12px;">
                     <button class="glass-button" onclick="findMoms()">Идем гулять</button>
                     <button class="glass-button" onclick="searchMoms()">Найти маму</button>
                     <button class="glass-button" onclick="showLocations()">Локации</button>
                 </div>
+                <div id="adminButtonContainer" style="margin-top: 12px;"></div>
             </div>
+        </div>
+
+        <!-- Admin Screen -->
+        <div id="adminScreen" class="screen">
+            <button class="close-btn" onclick="backFromAdmin()">×</button>
+            <h2 id="adminTitle">Админка</h2>
+            <p>Здесь будет меню администратора.</p>
         </div>
     </div>
 
@@ -269,37 +270,52 @@
         let user = null;
         let currentUser = null;
 
-        // Очистка кэша при закрытии/уходе
-        function clearCacheOnExit() {
-            console.log('🧹 Очистка кэша при закрытии приложения');
+        // Очистка кэша при уходе
+        const clearCache = () => {
             localStorage.removeItem('mamaRyadomUser');
-            // Можно добавить другие очистки при необходимости
-        }
+        };
+        window.addEventListener('beforeunload', clearCache);
+        window.addEventListener('pagehide', clearCache);
 
-        // Регистрация обработчиков завершения
-        window.addEventListener('beforeunload', clearCacheOnExit);
-        window.addEventListener('pagehide', clearCacheOnExit); // для iOS Safari и фоновых вкладок
+        // Проверка существования пользователя через Vercel API
+        async function checkUserInSheet(userId) {
+            try {
+                const res = await fetch('/api/check-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                const data = await res.json();
+                return data.found ? data.profile : null;
+            } catch (e) {
+                console.error('Ошибка проверки пользователя:', e);
+                return null;
+            }
+        }
 
         async function initTelegramApp() {
             try {
                 tg = window.Telegram.WebApp;
                 tg.expand();
-                tg.enableClosingConfirmation();
-
-                // Отключаем подтверждение закрытия — чтобы очистка работала автоматически
-                // Если нужно подтверждение — убери эту строку
                 tg.disableClosingConfirmation();
-
                 user = tg.initDataUnsafe?.user;
-                console.log('👤 Пользователь Telegram:', user);
-                
+
+                if (!user?.id) {
+                    alert('Не удалось получить данные Telegram');
+                    return;
+                }
+
                 setBackgroundByTime();
-                
-                // При старте НЕ восстанавливаем пользователя — т.к. кэш очищается при выходе
-                // Но если хочешь сохранять сессию до закрытия — можно оставить проверку
-                // Сейчас: каждый запуск = чистый старт, как просил
-                showScreen('registrationScreen');
-                if (user) {
+
+                // Проверяем в таблице
+                showScreen('loadingScreen');
+                const profile = await checkUserInSheet(user.id);
+
+                if (profile) {
+                    currentUser = profile;
+                    showMainScreen();
+                } else {
+                    showScreen('registrationScreen');
                     document.getElementById('regStatus').innerHTML = `
                         Привет, ${user.first_name}! 👋<br>
                         <small>Заполни профиль чтобы начать</small>
@@ -312,171 +328,150 @@
         }
 
         function setBackgroundByTime() {
-            const background = document.getElementById('background');
-            const welcomeMessageEl = document.getElementById('welcomeMessage');
-            const timeGreetingEl = document.getElementById('timeGreeting');
             const now = new Date();
             const hour = now.getHours();
             const isDay = hour >= 6 && hour < 22;
-
-            let backgroundUrl;
-            if (isDay) {
-                backgroundUrl = 'https://i.postimg.cc/BZ5RKvBr/1762526374.png';
-                welcomeMessageEl.className = 'subtitle day';
-                timeGreetingEl.className = 'greeting day';
-            } else {
-                backgroundUrl = 'https://i.postimg.cc/7Z5BmPSy/1762867571.png';
-                welcomeMessageEl.className = 'subtitle night';
-                timeGreetingEl.className = 'greeting night';
-            }
-            
-            background.innerHTML = `<img src="${backgroundUrl}" alt="Background">`;
+            const bgDay = 'https://i.postimg.cc/BZ5RKvBr/1762526374.png';
+            const bgNight = 'https://i.postimg.cc/7Z5BmPSy/1762867571.png';
+            document.getElementById('background').innerHTML = 
+                `<img src="${isDay ? bgDay : bgNight}" alt="Background">`;
+            updateTextStyle(isDay);
         }
 
-        function getTimeGreeting() {
-            const now = new Date();
-            const hour = now.getHours();
-            if (hour >= 6 && hour < 12) return 'Доброе утро';
-            if (hour >= 12 && hour < 18) return 'Добрый день';
-            if (hour >= 18 && hour < 22) return 'Добрый вечер';
-            return 'Доброй ночи';
+        function updateTextStyle(isDay) {
+            const cls = isDay ? 'day' : 'night';
+            document.querySelectorAll('.greeting, .subtitle').forEach(el => {
+                el.className = (el.className.split(' ')[0] || '') + ' ' + cls;
+            });
         }
 
-        async function registerUser(userData) {
+        async function registerUser(formData) {
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Регистрация...';
-            
+
             try {
-                showStatus('Сохраняем данные...', 'info');
-                
-                const response = await fetch('/api/save-user', {
+                showStatus('Сохраняем...', 'info');
+                const payload = {
+                    userId: user.id,
+                    nickname: formData.nickname,
+                    city: formData.city,
+                    children: formData.children,
+                    role: 'user' // ← стандартная роль
+                };
+
+                const res = await fetch('/api/save-user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
+                    body: JSON.stringify(payload)
                 });
-                
-                const result = await response.json();
-                console.log('✅ Результат сохранения:', result);
-                
+
+                const result = await res.json();
                 if (result.success) {
-                    currentUser = {
-                        ...userData,
-                        first_name: user?.first_name || 'Мама',
-                        registered: true
-                    };
-                    
-                    // Сохраняем в localStorage — но при следующем запуске он будет удалён
+                    currentUser = payload;
                     localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                    showStatus('✅ Регистрация успешна!', 'success');
-                    
-                    setTimeout(() => {
-                        showMainScreen();
-                    }, 1500);
-                } else {
-                    throw new Error(result.error || 'Ошибка сохранения');
-                }
-            } catch (error) {
-                console.error('❌ Ошибка регистрации:', error);
-                currentUser = {
-                    ...userData,
-                    first_name: user?.first_name || 'Мама',
-                    registered: true,
-                    localSave: true
-                };
+                    showStatus('✅ Успешно!', 'success');
+                    setTimeout(() => showMainScreen(), 1500);
+                } else throw new Error('Ошибка');
+            } catch (e) {
+                console.error(e);
+                // fallback local
+                currentUser = { ...formData, userId: user.id, role: 'user' };
                 localStorage.setItem('mamaRyadomUser', JSON.stringify(currentUser));
-                showStatus('✅ Регистрация успешна!', 'success');
-                setTimeout(() => {
-                    showMainScreen();
-                }, 1500);
+                showStatus('✅ Локально сохранено', 'success');
+                setTimeout(() => showMainScreen(), 1500);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 Начать пользоваться';
+                submitBtn.textContent = '🚀 Начать';
             }
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
         }
 
         function showMainScreen() {
-            const now = new Date();
-            const hour = now.getHours();
-            const isDay = hour >= 6 && hour < 22;
-
-            const welcomeMessageEl = document.getElementById('welcomeMessage');
-            const timeGreetingEl = document.getElementById('timeGreeting');
-
-            welcomeMessageEl.className = 'subtitle ' + (isDay ? 'day' : 'night');
-            timeGreetingEl.className = 'greeting ' + (isDay ? 'day' : 'night');
+            const isDay = new Date().getHours() >= 6 && new Date().getHours() < 22;
+            updateTextStyle(isDay);
 
             if (currentUser) {
-                const greeting = getTimeGreeting();
-                timeGreetingEl.textContent = `${greeting}, ${currentUser.nickname}!`;
-                welcomeMessageEl.textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
+                const greeting = ['Доброе утро', 'Добрый день', 'Добрый вечер', 'Доброй ночи'][
+                    new Date().getHours() < 12 ? 0 : new Date().getHours() < 18 ? 1 : new Date().getHours() < 22 ? 2 : 3
+                ];
+                document.getElementById('timeGreeting').textContent = `${greeting}, ${currentUser.nickname}!`;
+                document.getElementById('welcomeMessage').textContent = 'Как хорошо, что вы зашли, чтобы найти компанию для прогулки';
             }
+
+            // Показываем админ-кнопку, если нужно
+            const adminContainer = document.getElementById('adminButtonContainer');
+            adminContainer.innerHTML = '';
+            if (currentUser.role === 'admin') {
+                const btn = document.createElement('button');
+                btn.className = 'glass-button admin-button';
+                btn.textContent = `Администратор ${currentUser.nickname}`;
+                btn.onclick = () => showAdminScreen('Админка');
+                adminContainer.appendChild(btn);
+            } else if (currentUser.role === 'upadmin') {
+                const btn = document.createElement('button');
+                btn.className = 'glass-button owner-button';
+                btn.textContent = `Владелец ${currentUser.nickname}`;
+                btn.onclick = () => showAdminScreen('Владелец');
+                adminContainer.appendChild(btn);
+            }
+
             showScreen('mainScreen');
         }
 
-        function showStatus(message, type) {
-            const statusEl = document.getElementById('regStatus');
-            statusEl.textContent = message;
-            statusEl.className = `status ${type}`;
+        function showAdminScreen(title) {
+            document.getElementById('adminTitle').textContent = title;
+            showScreen('adminScreen');
         }
 
+        function backFromAdmin() {
+            showScreen('mainScreen');
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('regStatus');
+            el.textContent = msg;
+            el.className = `status ${type}`;
+        }
+
+        // Navigation
         function showWalkSection() {
             document.getElementById('walkButtons').style.display = 'grid';
         }
+        function showNannySection() { alert('👶 В разработке'); }
+        function showSettings() { alert('⚙️ В разработке'); }
+        function findMoms() { alert('🚶‍♀️ В разработке'); }
+        function searchMoms() { alert('🔍 В разработке'); }
+        function showLocations() { alert('📍 В разработке'); }
 
-        function showNannySection() {
-            alert('👶 Раздел "Няня" в разработке 🚧');
-        }
-
-        function showSettings() {
-            alert('⚙️ Раздел "Настройки" в разработке 🚧');
-        }
-
-        function findMoms() {
-            alert('🚶‍♀️ Функция "Идем гулять" в разработке 🚧');
-        }
-
-        function searchMoms() {
-            alert('🔍 Функция "Найти маму" в разработке 🚧');
-        }
-
-        function showLocations() {
-            alert('📍 Функция "Локации" в разработке 🚧');
-        }
-
-        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        // Forms
+        document.getElementById('registrationForm')?.addEventListener('submit', e => {
             e.preventDefault();
-            const formData = {
-                userId: user?.id || Math.floor(Math.random() * 1000000),
+            const fd = {
                 nickname: document.getElementById('nickname').value,
                 city: document.getElementById('city').value,
                 children: document.getElementById('children').value
             };
-            if (!formData.nickname || !formData.city || !formData.children) {
+            if (!fd.nickname || !fd.city || !fd.children) {
                 showStatus('❌ Заполните все поля', 'error');
                 return;
             }
-            registerUser(formData);
+            registerUser(fd);
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initTelegramApp, 500);
-        });
+        document.addEventListener('DOMContentLoaded', () => setTimeout(initTelegramApp, 300));
 
-        // Глобальные функции
         window.showWalkSection = showWalkSection;
         window.showNannySection = showNannySection;
         window.showSettings = showSettings;
         window.findMoms = findMoms;
         window.searchMoms = searchMoms;
         window.showLocations = showLocations;
+        window.backFromAdmin = backFromAdmin;
     </script>
 </body>
 </html>
